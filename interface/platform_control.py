@@ -8,7 +8,7 @@ import sys,traceback
 import serial
 from threading import Thread
 
-import tkinter as tk
+import Tkinter as tk
 
 #create a global variable to hold the platform command
 cmd = [0,0,0,0,0,0]
@@ -26,7 +26,7 @@ def xcallback(v):
 def ycallback(v):
     cmd[1]=yslider.get()
 def zcallback(v):
-    cmd[2]=zslider.get()
+    cmd[2]=zslider.get()+4
 
 ############## CALLBACK FOR RUN BUTTON ##################
 
@@ -39,9 +39,43 @@ def startPlatformThread():
 ############## Function to communicate with Arduino ###########
 def doPlatform():
     global cmd
+    #initialize old time
+    lastsendtime = time.time()
+    arduino_delay = 0.1
+
+    #connect to the serial port.
+    #the portentry.get() call gets the port name
+    #from the textbox.
+    ser = serial.Serial(
+    port=portentry.get(), #ACM100',   #USB0', 
+    baudrate=115200) 
+    print("initializing")
+    ser.close()
+    time.sleep(2.0)
+    ser.open()
+    time.sleep(2.0)
+    print("done") 
+    
+    #this is an infinite loop.
     while 1:
-        print(cmd)
-        time.sleep(0.1)
+        #get current time
+        tnow = time.time()
+        if tnow-lastsendtime>arduino_delay:     ### also happens super fast
+            #print 'sent'
+            print("sent: "+format(cmd[0],'0.2f')+","+format(cmd[1],'0.2f')+","+format(cmd[2],'0.2f')+","+format(cmd[3],'0.4f')+","+format(cmd[4],'0.4f')+","+format(cmd[5],'0.4f'))
+            lastsendtime = tnow
+            ser.write('!')
+            for ind in range(0,len(cmd)-1):
+              ser.write(format(cmd[ind],'0.2f'))
+              ser.write(',')
+            ser.write(str(cmd[-1]))
+            ser.write('\n')
+            line = ser.readline()
+            print ("recieved: "+line)
+        else:
+          time.sleep(.01)
+        # print(cmd)
+        # time.sleep(0.1)
 
 
 
