@@ -15,7 +15,7 @@ s = tf('s');
 scale = 0.25;
 
 z = 1;
-wn = 10;
+wn = 1;
 t = 0:.001:4;
 %high pass filter for x, y
 Ghp = s^2/(s^2+2*z*wn*s+wn^2);
@@ -73,7 +73,7 @@ title('1g acceleration step response in y')
 %% TILT FILTER (low pass)
 
 %now simulate the low-pass filter used to develop tilt command
-wlp = 100;
+wlp = 10;
 zlp = 1;
 Glp = wlp^2/(s^2+2*zlp*wlp*s+wlp^2);
 [aylp,t]=step(Glp*scale,t);
