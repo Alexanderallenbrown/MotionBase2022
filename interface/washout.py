@@ -1,32 +1,92 @@
 #!/usr/bin/env python
-import socket
-import sys, select
 import time
 from numpy import *
 from scipy.signal import *
 from matplotlib.pyplot import *
 import sys,traceback
-import serial
-from threading import Thread
+
+class Washout:
+  def __init__(self,dt):
+    #scale factors for simulating accelerations.
+    #these prevent the platform from trying to simulate 1G (90 degrees of roll or pitch)
+    self.ayscale = 0.25
+    self.axscale = 0.25
+    self.azscale = 0.25
+    #scale factors for simulating angular velocities
+    self.wzscale = 1.0
+    self.dt = dt #this should be your guess for how fast the algorithm will run.
+    #the speed of the loop will have a huge effect on how accurate this is,
+    #so make sure you tune the thread that operates this filter to have this dt.
+    
+    #call the function to do the filter definitions.
+    #may want to update this function to make filters not hard-coded...
+    #possibly pass them in as options
+    self.updateFilters(dt)
+
+    #prepare vectors of "past" values for filters to use
+    # we have a max of a 4th order TF, so we will include 4 "lagged" values
+    self.axvec = [0,0,0,0,0] #x acceleration (m/s/s)
+    self.ayvec = [0,0,0,0,0] #y acceleration (m/s/s)
+    self.azvec = [0,0,0,0,0] #z acceleration (m/s/s)
+    self.wzvec = [0,0,0,0,0] #yaw rate (rad/s)
+    self.g = 9.81
+
+  def updateFilters(self,dt):
+    #Washout filter definitions (could read from a file or make adjustable...)
+    
+    #filter 1: high pass that produces a y command from y acceleration ("scoot" filter)
+    # G(s) = 10s^2/(s^2+10s+20)
+    (self.numyhp,self.denyhp,self.dtyhp) = cont2discrete(([10,0],[1,10,20]),self.dt) #numerator and denominator coefficients
+
+    #filter 2: low pass that produces a roll angle to simulate sustained acceleration in y
+    #ay to roll
+    (self.numylp,self.denylp,self.dtylp) = cont2discrete(([-32500.],[1.,100.,1300.]),self.dt)
+
+    #filter 3: high pass that produces a x command from x acceleration ("scoot" filter)
+    # G(s) = 10s^2/(s^2+10s+20)
+    (self.numxhp,self.denxhp,self.dtxhp) = cont2discrete(([10,0],[1,10,20]),self.dt) #numerator and denominator coefficients
+
+    #filter 4: low pass that produces a pitch angle to simulate sustained acceleration in x
+    #ax to pitch
+    (self.numxlp,self.denxlp,self.dtxlp) = cont2discrete(([-32500.],[1.,100.,1300.]),self.dt)
 
 
-def startSerial(myport):
-  # Set up socket to send data
-  ser = serial.Serial(
-      port='/dev/ttyUSB100', #ACM100',   #USB0', 
-      baudrate=115200) 
-  print "initializing"
-  ser.close()
-  time.sleep(2.0)
-  ser.open()
-  time.sleep(2.0)
-  print("done") 
-  return ser
+    #filter 5: high pass filter producing a z command from z acceleration (scoot)
+    #az to z_desired
+    (self.numzhp,self.denzhp,self.dtzhp) = cont2discrete(([10.,0],[1.,11.,110.,100.]),dt[-1])
+
+    #filter 6: high pass filter producing a anglez to anglez_filtered
+    # instead of "y" for yaw we will use "a" for "azimuth"
+    (self.numahp,self.denahp,self.dtahp) = cont2discrete(([1,0,0],[1.,2.,4.]),dt[-1])
+
+
+  #this function gets called over and over in the loop. It takes in accelerations and yaw rate
+  #it produces and updated guess for the simulated accelerations and yaw rates.
+  def doWashout(self,ax_raw,ay_raw,az_raw,wz_raw):
+    #first we need to scale the signals down.
+    ax_raw = ax_raw*self.axscale
+    ay_raw = ay_raw*self.ayscale
+    az_raw = az_raw*self.azscale
+    wz_raw = wz*self.wzscale
+
+    #now we actually apply the filters. the "raw" accel is the input to each TF
+    #the vectors ax,ay, etc. are the "output."
+
+    #now we have to update our "buffers" of past acceleration values
+    #pop(0) removes the first element in the array. append() adds a new value to the end.
+    #the next 3 lines remove the "oldest" value of acceleration and replace the last element with the newest.
+    self.ax.pop(0);self.ax.append(axfilt)
+    self.ay.pop(0);self.ay.append(ayfilt)
+    self.az.pop(0);self.az.append(azfilt)
+    self.wz.pop(0);self.wz.append(wzfilt)
+
+    
 
 
 
-###### filtering function, at ~500 Hz
-def filt():
+
+###### Implements Washout Filters (design these using MATLAB)
+def doWashout(ax_raw,ay_raw,az_raw,wx_raw,wy_raw,wz_raw,dt):
 
   global platform_port, t, ax_raw, ay_raw, az_raw, anglex_raw, angley_raw, anglez_raw, buffsize, anglezraw#, dt
 
@@ -216,169 +276,10 @@ def filt():
         # print endend
 
 
-#this is a quick function to get rid of packets that have stacked up on us.
-def FlushListen(sock):
-  while 1:
-    try:
-      junkbytes=sock.recv(1024)
-    except:
-      break
-
-      
-########### function to read stuff from SpeedDreams and plot data
-def getdata():    ### 1000 Hz (not including plot time)
-  
-  global t, ax_raw, ay_raw, az_raw, anglex_raw, angley_raw, anglez_raw, anglezraw, buffsize, dt
-
-  # initialize stuff
-  axraw = 0
-  ayraw = 0
-  azraw = 0
-  anglexraw = 0
-  angleyraw = 0
-  anglezraw = 0
-  ax_raw = []
-  ay_raw = []
-  az_raw = []
-  anglex_raw = []
-  angley_raw = []
-  anglez_raw = []
-  dt=[]
-  # dt_mean = []
-
-  # create UDP socket to receive data
-  host = 'localhost' #does not have to be
-  port = 8000 # some default
-  send_address = (host, port) # Set the address to send to
-  s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)    # Create Datagram Socket (UDP)
-  s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Make Socket Reusable
-  s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1) # Allow incoming broadcasts
-  s.setblocking(False) # Set socket to non-blocking mode
-  s.bind(('', port)) #Accept Connections on port
-  print "Accepting connections on port", hex(port)
-  
-
-  # create a figure for us to see our data on
-  ion()
-  fig,ax = subplots(3,1)
-  ax[0].hold(True)
-  ax[1].hold(True)
-  ax[2].hold(True)
-  fig.canvas.draw()
-  plt1 = ax[0].plot(0,0,'r')[0]
-  plt2 = ax[1].plot(0,0,'k')[0]
-  plt3 = ax[2].plot(0,0,'b')[0]
-  buffsize = 500  #might want to change this
-  t = []
-  plotXvals = []
-  plotYvals = []
-  plotZvals = []
-  plot_delay = 0.1 #seconds
-  plotoldtime = time.time()
-
-  # now loop through to get data
-  while 1:
-    # startarttime = time.time()
-    starttime = time.time()
-
-    #try flushing extra crap out of the socket
-    FlushListen(s)
-    time.sleep(.0005)
-
-    try:              ## really fast, >>> 500 Hz
-      # startmessage = time.time()
-      message, address = s.recvfrom(8192) # Buffer size. Change as needed.  
-      #print message
-      # endmessageTime = time.time()
-      # msgTime = endmessageTime-startmessage
-      # print msgTime
-      
-    except:
-      message = None
-      #print "message none"
-      
-    if message is not None:           ## 1000 Hz and faster
-      #print "msg received"
-      # startmessagesplit = time.time()
-      message_split = message.split(',')            
-      axraw = -1.0*float(message_split[0])/9.81
-      ayraw = -1.0*float(message_split[1])/9.81
-      azraw = -1.0*float(message_split[2])/9.81
-      anglexraw = float(message_split[3])
-      angleyraw = float(message_split[4])
-      anglezraw = float(message_split[5])
-      ax_raw=append(ax_raw,axraw) 
-      ay_raw=append(ay_raw,ayraw) 
-      az_raw=append(az_raw,azraw) 
-      anglex_raw=append(anglex_raw,anglexraw)  
-      angley_raw=append(angley_raw,angleyraw)  
-      anglez_raw=append(anglez_raw,anglezraw) 
-
-      # endmessageSplitTime = time.time()
-      # msgSplitTime = endmessageSplitTime-startmessagesplit
-      # print msgSplitTime
-
-      #calculate dt
-      endtime = time.time()
-      diff = endtime - starttime
-      dt = append(dt,diff)
-      # dt_mean = np.mean(dt[-20:-1])
-      starttime = time.time()
-      # print dt_mean
-      
-      # endtimetime= time.time()
-      # endendtimetime = endtimetime-startarttime
-      # print endendtimetime
-
-      #for plotting
-      if len(t)<buffsize:
-        t.append(time.time()-starttime)
-        plotXvals.append(axraw)
-        plotYvals.append(ayraw)
-        plotZvals.append(azraw)
-      else: 
-        t = t[1:]
-        t.append(time.time())
-        plotXvals = plotXvals[1:]
-        plotXvals.append(axraw)
-        plotYvals = plotYvals[1:]
-        plotYvals.append(ayraw)
-        plotZvals = plotZvals[1:]
-        plotZvals.append(azraw)
-
-      if (time.time()-plotoldtime>plot_delay and len(t)>=buffsize):#if enough time has passed
-        #set the old time
-        plotoldtime = time.time()
-        #set our X limits of the plot to only look at the last 5 seconds of data
-        ax[0].set_xlim(t[-1]-5,t[-1])
-        ax[0].set_ylim(-0.3,0.3)
-        ax[1].set_xlim(t[-1]-5,t[-1])
-        ax[1].set_ylim(-0.3,0.3)
-        ax[2].set_xlim(t[-1]-5,t[-1])
-        ax[2].set_ylim(-0.3,0.3)
-        #this sets the line plt1 data to be our updated t and r vectors.
-        plt1.set_data(t,plotXvals)
-        plt2.set_data(t,plotYvals)
-        plt3.set_data(t,plotZvals)
-        #the draw command is last, and tells matplotlib to update the figure!!
-        fig.canvas.draw()
-        pause(.0001)#must have a small pause here or nothing will work. Pause is a matplotlib.pyplot function.
-      time.sleep(.0005)
-
-    else:
-      pass
-      #time.sleep(.001)
-
 
 
 
 ####### execute the thread
 if __name__ == "__main__" :
 
-    thread1 = Thread(target=getdata,args=())
-    thread2 = Thread(target=filt,args=())
-
-    thread1.start()
-    thread2.start()
-    thread1.join()
-    thread2.join()
+    
