@@ -37,8 +37,8 @@
 #define deg30 pi/6
 
 //these are the absolute limits of motion that we will allow.
-float pos_limit = 3;
-float ang_limit = 0.2;
+float pos_limit = 100;
+float ang_limit = 100;
 
 unsigned long time;
 
@@ -100,15 +100,22 @@ static float M[3][3], rxp[3][6], T[3], H[3] = {0,0,z_home};
 
 void setup(){
   
-  Serial.setTimeout(5); // testing for delay source
+  //Serial.setTimeout(5); // testing for delay source
   
 //attachment of servos to PWM digital pins of arduino
-   servo[0].attach(3, MIN, MAX);
-   servo[1].attach(5, MIN, MAX);
-   servo[2].attach(6, MIN, MAX);
-   servo[3].attach(9, MIN, MAX);
-   servo[4].attach(10, MIN, MAX);
-   servo[5].attach(11, MIN, MAX);
+//   servo[0].attach(3, MIN, MAX);
+//   servo[1].attach(5, MIN, MAX);
+//   servo[2].attach(6, MIN, MAX);
+//   servo[3].attach(9, MIN, MAX);
+//   servo[4].attach(10, MIN, MAX);
+//   servo[5].attach(11, MIN, MAX);
+
+   servo[0].attach(11, MIN, MAX);
+   servo[1].attach(3, MIN, MAX);
+   servo[2].attach(5, MIN, MAX);
+   servo[3].attach(6, MIN, MAX);
+   servo[4].attach(9, MIN, MAX);
+   servo[5].attach(10, MIN, MAX);
 //begin of serial communication
    Serial.begin(115200);
    Serial.println("welcome to the motion platform");
@@ -124,9 +131,9 @@ void loop()
   //looks for a newline character, and the rest of the numbers are separated by commas.
   
 //let's kill any buffered serial data
-  while(Serial.available()>32){
-    byte junk = Serial.read();
- }
+//  while(Serial.available()>32){
+//    byte junk = Serial.read();
+// }
   
   while(Serial.available()>0){
     
@@ -186,30 +193,30 @@ void loop()
      
      //write to the base
      //Serial.write("hello,");
-     Serial.flush();
+     //lsof -DSerial.flush();
      setPos(arr); 
      
 //     Serial.print(millis());
-     Serial.print(",");
-     Serial.print(theta_a[0]);
-     Serial.print(",");
-     Serial.print(theta_a[1]);
-     Serial.print(",");
-     Serial.print(theta_a[2]);
-     Serial.print(",");
-     Serial.print(theta_a[3]);
-     Serial.print(",");
-     Serial.print(theta_a[4]);
-     Serial.print(",");
-     Serial.print(theta_a[5]);
-     Serial.println();
+//     Serial.print(",");
+//     Serial.print(theta_a[0]);
+//     Serial.print(",");
+//     Serial.print(theta_a[1]);
+//     Serial.print(",");
+//     Serial.print(theta_a[2]);
+//     Serial.print(",");
+//     Serial.print(theta_a[3]);
+//     Serial.print(",");
+//     Serial.print(theta_a[4]);
+//     Serial.print(",");
+//     Serial.print(theta_a[5]);
+//     Serial.println();
      
 
   
     }
     }
   }
-delay(10);
+delay(1);
 
 }
 
@@ -301,8 +308,8 @@ unsigned char setPos(float pe[]){
         theta_a[i]=getAlpha(&i);
         if(i==INV1||i==INV2||i==INV3){
         //if(1){  
-          ///NOTICE!!!! TODO THIS IS WHACKY. USED TO HAVE MINUS SIGN IN IF STATEMENT
-          servo_pos[i] = constrain(zero[i] + (theta_a[i])*servo_mult, MIN,MAX);
+          ///NOTICE!!!! should be subtraction here if using mini platform, but NOT if fullsize
+          servo_pos[i] = constrain(zero[i] - (theta_a[i])*servo_mult, MIN,MAX);
         }
         else{
             servo_pos[i] = constrain(zero[i] + (theta_a[i])*servo_mult, MIN,MAX);

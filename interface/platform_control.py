@@ -7,6 +7,7 @@ from matplotlib.pyplot import *
 import sys,traceback
 import serial
 from threading import Thread
+import copy
 
 import Tkinter as tk
 
@@ -28,7 +29,7 @@ def xcallback(v):
 def ycallback(v):
     cmd[1]=yslider.get()
 def zcallback(v):
-    cmd[2]=zslider.get()+5
+    cmd[2]=zslider.get()+0
 
 ############## CALLBACK FOR RUN BUTTON ##################
 
@@ -50,7 +51,7 @@ def cleanupPlatformThread():
 def doPlatform():
     global cmd,ser,endSerialThread
     #initialize old time
-    arduino_delay = 0.01
+    arduino_delay = 0.1
 
     #connect to the serial port.
     #the portentry.get() call gets the port name
@@ -70,19 +71,19 @@ def doPlatform():
     lastsendtime = time.time()-starttime
     #this is an infinite loop  .
     while not endSerialThread:
-
+        cmdlocal = copy.deepcopy(cmd)
         #get current time
         tnow = time.time()-starttime
         # print(tnow-lastsendtime)
         if tnow-lastsendtime>arduino_delay:     ### also happens super fast
             #print 'sent'
-            print("sent: "+format(cmd[0],'0.2f')+","+format(cmd[1],'0.2f')+","+format(cmd[2],'0.2f')+","+format(cmd[3],'0.4f')+","+format(cmd[4],'0.4f')+","+format(cmd[5],'0.4f'))
+            print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
             lastsendtime = tnow
             ser.write('!')
-            for ind in range(0,len(cmd)-1):
-              ser.write(format(cmd[ind],'0.3f'))
+            for ind in range(0,len(cmdlocal)-1):
+              ser.write(format(cmdlocal[ind],'0.3f'))
               ser.write(',')
-            ser.write(str(cmd[-1]))
+            ser.write(str(cmdlocal[-1]))
             ser.write('\n')
             # time.sleep(0.01)
             #line = ser.readline()
