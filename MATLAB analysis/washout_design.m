@@ -15,7 +15,7 @@ s = tf('s');
 scale = 0.25;
 
 z = 1;
-wn = 1;
+wn = 10;
 t = 0:.001:4;
 %high pass filter for x, y
 Ghp = s^2/(s^2+2*z*wn*s+wn^2);
@@ -73,9 +73,9 @@ title('1g acceleration step response in y')
 %% TILT FILTER (low pass)
 
 %now simulate the low-pass filter used to develop tilt command
-wlp = 10;
+wlp = 50;
 zlp = 1;
-Glp = wlp^2/(s^2+2*zlp*wlp*s+wlp^2);
+Glp = wlp^2/(s^2+2*zlp*wlp*s+wlp^2)
 [aylp,t]=step(Glp*scale,t);
 %now turn this into a tilt angle command. perceived accel is the sin(theta)
 tilt = asind(aylp);
@@ -93,6 +93,19 @@ xlabel('Time (s)')
 ylabel('Simulated accel (g)')
 title('1g step response')
 legend('from tilt','from scoot','total')
+
+%% high pass filter for yaw rate -> yaw angle
+% wnhpa = 1;
+% zhpa = 1;
+% Ghpa = s^2/(s^2+2*wnhpa*zhpa*s+wnhpa^2);
+% 
+% figure
+% 
+% aleaka = .3;
+% Aleaka = 1;
+% Gleaka = Aleka*s/(s+aleaka);
+
+
 
 
 

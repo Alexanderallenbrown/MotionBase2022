@@ -3,7 +3,6 @@ import time
 from numpy import *
 from scipy.signal import *
 from matplotlib.pyplot import *
-import sys,traceback
 
 class Washout:
   def __init__(self,dt):
@@ -13,7 +12,7 @@ class Washout:
     self.axscale = 0.25
     self.azscale = 0.25
     #scale factors for simulating angular velocities
-    self.wzscale = 1.0
+    self.wzscale = 50.0
     self.dt = dt #this should be your guess for how fast the algorithm will run.
     #the speed of the loop will have a huge effect on how accurate this is,
     #so make sure you tune the thread that operates this filter to have this dt.
@@ -46,28 +45,29 @@ class Washout:
   #           ----------------------------------
   #           s^3 + 2.333 s^2 + 1.667 s + 0.3333
 
-    (self.numyhp,self.denyhp,self.dtyhp) = cont2discrete(([1,0],[1,2.333,1.667,.333]),self.dt) #numerator and denominator coefficients
+    (self.numyhp,self.denyhp,self.dtyhp) = cont2discrete(([1.,0],[1,20.333,106.667,33.333]),self.dt,method='zoh') #numerator and denominator coefficients
 
+    print(self.numyhp,self.denyhp,self.dtyhp)
     #filter 2: low pass that produces a roll angle to simulate sustained acceleration in y
     #ay to roll
-    (self.numylp,self.denylp,self.dtylp) = cont2discrete(([100.],[1.,20.,100.]),self.dt)
+    (self.numylp,self.denylp,self.dtylp) = cont2discrete(([2500.],[1.,100.,2500.]),self.dt,method='zoh')
 
     #filter 3: high pass that produces a x command from x acceleration ("scoot" filter)
     # G(s) = 10s^2/(s^2+10s+20)
-    (self.numxhp,self.denxhp,self.dtxhp) = cont2discrete(([1,0],[1,2.333,1.667,.333]),self.dt) #numerator and denominator coefficients
+    (self.numxhp,self.denxhp,self.dtxhp) = cont2discrete(([1.,0],[1,20.333,106.667,33.333]),self.dt,method='zoh') #numerator and denominator coefficients
 
     #filter 4: low pass that produces a pitch angle to simulate sustained acceleration in x
     #ax to pitch
-    (self.numxlp,self.denxlp,self.dtxlp) = cont2discrete(([100.],[1.,20.,100.]),self.dt)
+    (self.numxlp,self.denxlp,self.dtxlp) = cont2discrete(([2500.],[1.,100.,2500.]),self.dt,method='zoh')
 
 
     #filter 5: high pass filter producing a z command from z acceleration (scoot)
     #az to z_desired
-    (self.numzhp,self.denzhp,self.dtzhp) = cont2discrete(([1,0],[1,2.333,1.667,.333]),dt[-1])
+    (self.numzhp,self.denzhp,self.dtzhp) = cont2discrete(([1.,0],[1,20.333,106.667,33.333]),self.dt,method='zoh')
 
     #filter 6: high pass filter producing a anglez to anglez_filtered
     # instead of "y" for yaw we will use "a" for "azimuth"
-    (self.numahp,self.denahp,self.dtahp) = cont2discrete(([1,0],[1,2.333,1.667,.333]),dt[-1])
+    (self.numahp,self.denahp,self.dtahp) = cont2discrete(([1.,0],[1,20.333,106.667,33.333]),self.dt,method='zoh')
 
 
   #this function gets called over and over in the loop. It takes in accelerations and yaw rate
@@ -79,7 +79,7 @@ class Washout:
     ax_raw = ax_raw*self.axscale
     ay_raw = ay_raw*self.ayscale
     az_raw = az_raw*self.azscale
-    wz_raw = wz*self.wzscale
+    wz_raw = wz_raw*self.wzscale
 
 
     #now we actually apply the filters. the "raw" accel is the input to each TF
@@ -87,14 +87,15 @@ class Washout:
     #y_desired[3]=-den1[1]*y_desired[2]-den1[2]*y_desired[1]+num1[1]*ay_raw_small[2]+num1[2]*ay_raw_small[1]
     
     # all high pass filters below
-    xfilt = 1.0/self.denxhp[0]*(-self.denxhp[1]*self.xvec[0] - self.denxhp[2]*self.xvec[-1] - self.denxhp[3]*self.xvec[-2] + ax_raw*self.numxhp[0] + self.axrawvec[-1]*self.numxhp[-1] + self.axrawvec[-2]*self.numxhp[-2])
-    yfilt = 1.0/self.denyhp[0]*(-self.denyhp[1]*self.yvec[0] - self.denyhp[2]*self.yvec[-1] - self.denyhp[3]*self.yvec[-2] + ax_raw*self.numyhp[0] + self.ayrawvec[-1]*self.numyhp[-1] + self.ayrawvec[-2]*self.numyhp[-2])
-    zfilt = 1.0/self.denzhp[0]*(-self.denzhp[1]*self.zvec[0] - self.denzhp[2]*self.zvec[-1] - self.denzhp[3]*self.zvec[-2] + ay_raw*self.numzhp[0] + self.azrawvec[-1]*self.numzhp[-1] + self.azrawvec[-2]*self.numzhp[-2])
-    afilt = 1.0/self.denahp[0]*(-self.denahp[1]*self.avec[0] - self.denahp[2]*self.avec[-1] - self.denahp[3]*self.avec[-2] + wz_raw*self.numahp[0] + self.wzrawvec[-1]*self.numahp[-1] + self.wzrawvec[-2]*self.numahp[-2])
+    # print(self.numyhp)
+    xfilt = 1./self.denxhp[0]*(-self.denxhp[1]*self.xvec[-1] - self.denxhp[2]*self.xvec[-2] - self.denxhp[3]*self.xvec[-3] + (ax_raw*self.numxhp[0][0] + self.axrawvec[-1]*self.numxhp[0][1] + self.axrawvec[-2]*self.numxhp[0][2]+ self.axrawvec[-3]*self.numxhp[0][3]))
+    yfilt = 1./self.denyhp[0]*(-self.denyhp[1]*self.yvec[-1] - self.denyhp[2]*self.yvec[-2] - self.denyhp[3]*self.yvec[-3] + (ax_raw*self.numyhp[0][0] + self.ayrawvec[-1]*self.numyhp[0][1] + self.ayrawvec[-2]*self.numyhp[0][2]+ self.ayrawvec[-3]*self.numxhp[0][3]))
+    zfilt = 1./self.denzhp[0]*(-self.denzhp[1]*self.zvec[-1] - self.denzhp[2]*self.zvec[-2] - self.denzhp[3]*self.zvec[-3] + (ay_raw*self.numzhp[0][0] + self.azrawvec[-1]*self.numzhp[0][1] + self.azrawvec[-2]*self.numzhp[0][2]+ self.azrawvec[-3]*self.numxhp[0][3]))
+    afilt = 1./self.denahp[0]*(-self.denahp[1]*self.avec[-1] - self.denahp[2]*self.avec[-2] - self.denahp[3]*self.avec[-3] + (wz_raw*self.numahp[0][0] + self.wzrawvec[-1]*self.numahp[0][1] + self.wzrawvec[-2]*self.numahp[0][2]+ self.wzrawvec[-3]*self.numxhp[0][3]))
 
     #all low pass filters below
-    axfilt = 1.0/self.denxlp[0]*(-self.denxlhp[1]*self.axvec[0] - self.denxlp[2]*self.axvec[-1] + ax_raw*self.numxlp[0] + self.axrawvec[-1]*self.numxlp[-1])
-    ayfilt = 1.0/self.denylp[0]*(-self.denylhp[1]*self.ayvec[0] - self.denylp[2]*self.ayvec[-1] + ay_raw*self.numylp[0] + self.ayrawvec[-1]*self.numylp[-1])
+    axfilt = 1./self.denxlp[0]*(-self.denxlp[1]*self.axvec[-1] - self.denxlp[2]*self.axvec[-2] + (self.dt*ax_raw*self.numxlp[0][0] + self.axrawvec[-1]*self.numxlp[0][-1]))
+    ayfilt = 1./self.denylp[0]*(-self.denylp[1]*self.ayvec[-1] - self.denylp[2]*self.ayvec[-2] + (self.dt*ay_raw*self.numylp[0][0] + self.ayrawvec[-1]*self.numylp[0][-1]))
 
     #now we can compute the tilt angles in RADIANS.
     #positive roll is to driver's right side, so to feel like accelerating in positive y (drive left), need to take neg
@@ -110,17 +111,15 @@ class Washout:
     self.zvec.pop(0);self.zvec.append(zfilt)
     self.axvec.pop(0);self.axvec.append(axfilt)
     self.ayvec.pop(0);self.ayvec.append(ayfilt)
-    self.azvec.pop(0);self.azvec.append(azfilt)
     self.avec.pop(0);self.avec.append(afilt)
 
     #now we put raw input values in their "lagged" arrays so we can use "old" values in the filter as required.
     #pop(0) removes the first element in the array. append() adds a new value to the end.
     #the next 3 lines remove the "oldest" value of acceleration and replace the last element with the newest.
-    self.axrawvec.pop(0);self.axrawvec.append(axraw)
-    self.ayrawvec.pop(0);self.ayrawvec.append(ayraw)
-    self.azrawvec.pop(0);self.azrawvec.append(azraw)
-    self.wzrawvec.pop(0);self.wzrawvec.append(wzraw)
-
+    self.axrawvec.pop(0);self.axrawvec.append(ax_raw)
+    self.ayrawvec.pop(0);self.ayrawvec.append(ay_raw)
+    self.azrawvec.pop(0);self.azrawvec.append(az_raw)
+    self.wzrawvec.pop(0);self.wzrawvec.append(wz_raw)
 
     #now return the commands to the platform. each call to this function returns the scalar value that's relevant NOW
     return xfilt,yfilt,zfilt,roll,pitch,afilt
@@ -136,7 +135,7 @@ if __name__ == "__main__" :
   vehicle_accel = 9.81 #m/s/s, lateral acceleration
   #use max acceleration and fwd speed to get a turn radius
   #U^2/R = ay soo.... U^2/ay = R
-  turn_radius = vehicle_speed**2/vehicleaccel
+  turn_radius = vehicle_speed**2/vehicle_accel
   #yaw rate can then be computed as U/R (just geometry...)
   yawrate = vehicle_speed/turn_radius
 
@@ -156,20 +155,37 @@ if __name__ == "__main__" :
   wash = Washout(dt)#be sure to specify the CORRECT dt to the best of your ability!
 
   #create a matrix to hold our platform commands x,y,z,roll,pitch,yaw
-  cmdvec = zeros(len(t),6)#each row will represent commands at a particular timestep
+  cmdvec = zeros((len(tsim),6))#each row will represent commands at a particular timestep
 
   #now set up a for-loop to simulate this happening.
   #in "live" setting, this is a "while 1" infinite loop, and you're just calling the washout each time.
-
   for k in range(0,len(tsim)):
     #IRL you'd measure ax,ay,az,wz from a simulation, then to this to get commands.
     #we are pulling commands out of a vector because we've pre-stored them... but you would just use like ax/g...
     x,y,z,roll,pitch,yaw = wash.doWashout(ax[k]/g,ay[k]/g,az[k]/g,wz[k])
     #now for plotting, store everything in our array of commands
-    cmdvec[k,:] = [x,y,z,roll,pitch,yaw]
+    cmdvec[k,:] = array([x,y,z,roll,pitch,yaw])
 
   #now we've gotten our results, so let's plot
-  figure()
-  subplot
+  figure(figsize=(18, 6), dpi=80)
+  subplot(131)
+  plot(tsim,cmdvec[:,1]*180/pi,'k')
+  xlabel('Time (s)')
+  ylabel('y position (m)')
+  grid('on')
+  subplot(132)
+  plot(tsim,cmdvec[:,3]*180/pi,'k')
+  xlabel('Time (s)')
+  ylabel('roll angle (deg)')
+  grid('on')
+  subplot(133)
+  plot(tsim,cmdvec[:,5]*180/pi,'k')
+  grid('on')
+  xlabel('Time (s)')
+  ylabel('yaw angle (deg)')
+
+  axis('tight')
+
+  show()
 
     
