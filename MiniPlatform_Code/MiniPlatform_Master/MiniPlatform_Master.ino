@@ -37,8 +37,8 @@
 #define deg30 pi/6
 
 //these are the absolute limits of motion that we will allow.
-float pos_limit = 100;
-float ang_limit = 100;
+float pos_limit = 2;
+float ang_limit = .1;
 
 unsigned long time;
 

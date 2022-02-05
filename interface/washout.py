@@ -12,7 +12,7 @@ class Washout:
     self.axscale = 0.25
     self.azscale = 0.25
     #scale factors for simulating angular velocities
-    self.wzscale = 50.0
+    self.wzscale = 1.0
     self.dt = dt #this should be your guess for how fast the algorithm will run.
     #the speed of the loop will have a huge effect on how accurate this is,
     #so make sure you tune the thread that operates this filter to have this dt.
@@ -45,29 +45,29 @@ class Washout:
   #           ----------------------------------
   #           s^3 + 2.333 s^2 + 1.667 s + 0.3333
 
-    (self.numyhp,self.denyhp,self.dtyhp) = cont2discrete(([1.,0],[1,20.333,106.667,33.333]),self.dt,method='zoh') #numerator and denominator coefficients
+    (self.numyhp,self.denyhp,self.dtyhp) = cont2discrete(([1.,0],[1.,5.,8.,4.]),self.dt,method='zoh') #numerator and denominator coefficients
 
     print(self.numyhp,self.denyhp,self.dtyhp)
     #filter 2: low pass that produces a roll angle to simulate sustained acceleration in y
     #ay to roll
-    (self.numylp,self.denylp,self.dtylp) = cont2discrete(([2500.],[1.,100.,2500.]),self.dt,method='zoh')
+    (self.numylp,self.denylp,self.dtylp) = cont2discrete(([100.],[1.,20.,100.]),self.dt,method='zoh')
 
     #filter 3: high pass that produces a x command from x acceleration ("scoot" filter)
     # G(s) = 10s^2/(s^2+10s+20)
-    (self.numxhp,self.denxhp,self.dtxhp) = cont2discrete(([1.,0],[1,20.333,106.667,33.333]),self.dt,method='zoh') #numerator and denominator coefficients
+    (self.numxhp,self.denxhp,self.dtxhp) = cont2discrete(([1.,0],[1.,5.,8.,4.]),self.dt,method='zoh') #numerator and denominator coefficients
 
     #filter 4: low pass that produces a pitch angle to simulate sustained acceleration in x
     #ax to pitch
-    (self.numxlp,self.denxlp,self.dtxlp) = cont2discrete(([2500.],[1.,100.,2500.]),self.dt,method='zoh')
+    (self.numxlp,self.denxlp,self.dtxlp) = cont2discrete(([100.],[1.,20.,100.]),self.dt,method='zoh')
 
 
     #filter 5: high pass filter producing a z command from z acceleration (scoot)
     #az to z_desired
-    (self.numzhp,self.denzhp,self.dtzhp) = cont2discrete(([1.,0],[1,20.333,106.667,33.333]),self.dt,method='zoh')
+    (self.numzhp,self.denzhp,self.dtzhp) = cont2discrete(([1.,0],[1.,5.,8.,4.]),self.dt,method='zoh')
 
     #filter 6: high pass filter producing a anglez to anglez_filtered
     # instead of "y" for yaw we will use "a" for "azimuth"
-    (self.numahp,self.denahp,self.dtahp) = cont2discrete(([1.,0],[1,20.333,106.667,33.333]),self.dt,method='zoh')
+    (self.numahp,self.denahp,self.dtahp) = cont2discrete(([1.,0],[1.,5.,8.,4.]),self.dt,method='zoh')
 
 
   #this function gets called over and over in the loop. It takes in accelerations and yaw rate
@@ -169,20 +169,20 @@ if __name__ == "__main__" :
   #now we've gotten our results, so let's plot
   figure(figsize=(18, 6), dpi=80)
   subplot(131)
-  plot(tsim,cmdvec[:,1]*180/pi,'k')
+  plot(tsim,cmdvec[:,1],'k')
   xlabel('Time (s)')
   ylabel('y position (m)')
   grid('on')
   subplot(132)
-  plot(tsim,cmdvec[:,3]*180/pi,'k')
+  plot(tsim,cmdvec[:,3]*180/pi*2,'k')
   xlabel('Time (s)')
   ylabel('roll angle (deg)')
   grid('on')
   subplot(133)
-  plot(tsim,cmdvec[:,5]*180/pi,'k')
+  plot(tsim,cmdvec[:,5],'k')
   grid('on')
   xlabel('Time (s)')
-  ylabel('yaw angle (deg)')
+  ylabel('yaw angle (rad)')
 
   axis('tight')
 

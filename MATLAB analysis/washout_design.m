@@ -15,7 +15,7 @@ s = tf('s');
 scale = 0.25;
 
 z = 1;
-wn = 10;
+wn = 2;
 t = 0:.001:4;
 %high pass filter for x, y
 Ghp = s^2/(s^2+2*z*wn*s+wn^2);
@@ -31,7 +31,7 @@ title('1G step response')
 [xcommand,t] = lsim(1/s^2,ayfilt,t);
 
 %now leak position back out to zero over a few seconds
-aleak = 1/3;
+aleak = 1;
 Aleak = 1;
 Gleak = Aleak*s/(s+aleak);
 [xcommand2,t] = lsim(Gleak,xcommand,t);
@@ -73,7 +73,7 @@ title('1g acceleration step response in y')
 %% TILT FILTER (low pass)
 
 %now simulate the low-pass filter used to develop tilt command
-wlp = 50;
+wlp = 10;
 zlp = 1;
 Glp = wlp^2/(s^2+2*zlp*wlp*s+wlp^2)
 [aylp,t]=step(Glp*scale,t);
