@@ -99,9 +99,9 @@ class Washout:
 
     #now we can compute the tilt angles in RADIANS.
     #positive roll is to driver's right side, so to feel like accelerating in positive y (drive left), need to take neg
-    roll = -arcsin(ayfilt)
+    roll = arcsin(ayfilt)
     #positive pitch is down towards driver feet, so to feel like accelerating in positive x, need to take neg
-    pitch = -arcsin(axfilt)
+    pitch = arcsin(axfilt)
 
     #now we have to update our "buffers" of past acceleration and position values
     #pop(0) removes the first element in the array. append() adds a new value to the end.

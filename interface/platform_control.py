@@ -107,7 +107,7 @@ window = tk.Tk()
 #title the window
 window.title('Lafayette Motion Platform Control')
 #set window size
-window.geometry("450x450+100+50")
+window.geometry("750x750+100+50")
 
 
 #create a frame to hold the serial port configuration
@@ -142,7 +142,7 @@ rollframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 rollframe.pack()
 rolllabel = tk.Label(rollframe,text="Roll (rad)")
 rolllabel.pack(side=tk.LEFT)
-rollslider = tk.Scale(rollframe,orient=tk.HORIZONTAL,from_=-0.1,to=0.1,resolution=.001,command=rollcallback)
+rollslider = tk.Scale(rollframe,orient=tk.HORIZONTAL,from_=-0.1,to=0.1,resolution=.001,command=rollcallback,length=400)
 rollslider.pack(side=tk.RIGHT)
 
 #create a slider for pitch
@@ -150,7 +150,7 @@ pitchframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 pitchframe.pack()
 pitchlabel = tk.Label(pitchframe,text="pitch (rad)")
 pitchlabel.pack(side=tk.LEFT)
-pitchslider = tk.Scale(pitchframe,orient=tk.HORIZONTAL,from_=-0.1,to=0.1,resolution=.001,command=pitchcallback)
+pitchslider = tk.Scale(pitchframe,orient=tk.HORIZONTAL,from_=-0.1,to=0.1,resolution=.001,command=pitchcallback,length=400)
 pitchslider.pack(side=tk.RIGHT)
 
 #create a slider for yaw
@@ -158,7 +158,7 @@ yawframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 yawframe.pack()
 yawlabel = tk.Label(yawframe,text="yaw (rad)")
 yawlabel.pack(side=tk.LEFT)
-yawslider = tk.Scale(yawframe,orient=tk.HORIZONTAL,from_=-0.1,to=0.1,resolution=.001,command=yawcallback)
+yawslider = tk.Scale(yawframe,orient=tk.HORIZONTAL,from_=-0.1,to=0.1,resolution=.001,command=yawcallback,length=400)
 yawslider.pack(side=tk.RIGHT)
 
 #create a slider for x
@@ -166,7 +166,7 @@ xframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 xframe.pack()
 xlabel = tk.Label(xframe,text="x (rad)")
 xlabel.pack(side=tk.LEFT)
-xslider = tk.Scale(xframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=xcallback)
+xslider = tk.Scale(xframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=xcallback,length=400)
 xslider.pack(side=tk.RIGHT)
 
 #create a slider for y
@@ -174,7 +174,7 @@ yframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 yframe.pack()
 ylabel = tk.Label(yframe,text="y (rad)")
 ylabel.pack(side=tk.LEFT)
-yslider = tk.Scale(yframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=ycallback)
+yslider = tk.Scale(yframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=ycallback,length=400)
 yslider.pack(side=tk.RIGHT)
 
 #create a slider for z
@@ -182,7 +182,7 @@ zframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 zframe.pack()
 zlabel = tk.Label(zframe,text="z (rad)")
 zlabel.pack(side=tk.LEFT)
-zslider = tk.Scale(zframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=zcallback)
+zslider = tk.Scale(zframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=zcallback,length=400)
 zslider.pack(side=tk.RIGHT)
 
 #create a status message in this frame to show serial port status
