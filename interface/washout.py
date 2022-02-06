@@ -89,9 +89,9 @@ class Washout:
     # all high pass filters below
     # print(self.numyhp)
     xfilt = 1./self.denxhp[0]*(-self.denxhp[1]*self.xvec[-1] - self.denxhp[2]*self.xvec[-2] - self.denxhp[3]*self.xvec[-3] + (ax_raw*self.numxhp[0][0] + self.axrawvec[-1]*self.numxhp[0][1] + self.axrawvec[-2]*self.numxhp[0][2]+ self.axrawvec[-3]*self.numxhp[0][3]))
-    yfilt = 1./self.denyhp[0]*(-self.denyhp[1]*self.yvec[-1] - self.denyhp[2]*self.yvec[-2] - self.denyhp[3]*self.yvec[-3] + (ax_raw*self.numyhp[0][0] + self.ayrawvec[-1]*self.numyhp[0][1] + self.ayrawvec[-2]*self.numyhp[0][2]+ self.ayrawvec[-3]*self.numxhp[0][3]))
-    zfilt = 1./self.denzhp[0]*(-self.denzhp[1]*self.zvec[-1] - self.denzhp[2]*self.zvec[-2] - self.denzhp[3]*self.zvec[-3] + (ay_raw*self.numzhp[0][0] + self.azrawvec[-1]*self.numzhp[0][1] + self.azrawvec[-2]*self.numzhp[0][2]+ self.azrawvec[-3]*self.numxhp[0][3]))
-    afilt = 1./self.denahp[0]*(-self.denahp[1]*self.avec[-1] - self.denahp[2]*self.avec[-2] - self.denahp[3]*self.avec[-3] + (wz_raw*self.numahp[0][0] + self.wzrawvec[-1]*self.numahp[0][1] + self.wzrawvec[-2]*self.numahp[0][2]+ self.wzrawvec[-3]*self.numxhp[0][3]))
+    yfilt = 1./self.denyhp[0]*(-self.denyhp[1]*self.yvec[-1] - self.denyhp[2]*self.yvec[-2] - self.denyhp[3]*self.yvec[-3] + (ax_raw*self.numyhp[0][0] + self.ayrawvec[-1]*self.numyhp[0][1] + self.ayrawvec[-2]*self.numyhp[0][2]+ self.ayrawvec[-3]*self.numyhp[0][3]))
+    zfilt = 1./self.denzhp[0]*(-self.denzhp[1]*self.zvec[-1] - self.denzhp[2]*self.zvec[-2] - self.denzhp[3]*self.zvec[-3] + (ay_raw*self.numzhp[0][0] + self.azrawvec[-1]*self.numzhp[0][1] + self.azrawvec[-2]*self.numzhp[0][2]+ self.azrawvec[-3]*self.numzhp[0][3]))
+    afilt = 1./self.denahp[0]*(-self.denahp[1]*self.avec[-1] - self.denahp[2]*self.avec[-2] - self.denahp[3]*self.avec[-3] + (wz_raw*self.numahp[0][0] + self.wzrawvec[-1]*self.numahp[0][1] + self.wzrawvec[-2]*self.numahp[0][2]+ self.wzrawvec[-3]*self.numahp[0][3]))
 
     #all low pass filters below
     axfilt = 1./self.denxlp[0]*(-self.denxlp[1]*self.axvec[-1] - self.denxlp[2]*self.axvec[-2] + (self.dt*ax_raw*self.numxlp[0][0] + self.axrawvec[-1]*self.numxlp[0][-1]))
