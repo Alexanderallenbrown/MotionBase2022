@@ -9,12 +9,23 @@ import serial
 from threading import Thread
 import copy
 
-import Tkinter as tk
+import tkinter as tk
+from washout import Washout
 
 #create a global variable to hold the platform command
 cmd = [0,0,0,0,0,0]
 # command = [xdes_final,ydes_final,zdes_final,rdes_final,pdes_final,ades_final]
 endSerialThread = False
+
+washcmd = [0,0,0,0,0,0]
+washoutraw = [0,0,0,0]
+
+washdt = .01
+washalg = Washout(washdt)#attempt a .01sec dt
+
+
+
+
 
 
 ############### CALLBACKS FOR SLIDERS ###################
@@ -31,6 +42,15 @@ def ycallback(v):
 def zcallback(v):
     cmd[2]=zslider.get()+0
 
+def axcallback(v):
+    washoutraw[0]=axslider.get()
+def aycallback(v):
+    washoutraw[1]=ayslider.get()
+def azcallback(v):
+    washoutraw[2]=azslider.get()
+def yawratecallback(v):
+    washoutraw[3]=yawrateslider.get()
+
 ############## CALLBACK FOR RUN BUTTON ##################
 
 def startPlatformThread():
@@ -38,18 +58,37 @@ def startPlatformThread():
     endSerialThread = False
     statemsg["text"] = "Connected"
     platthread = Thread(target=doPlatform)
+    washoutthread = Thread(target=doWashout)
     platthread.start()
+    washoutthread.start()
     
 def cleanupPlatformThread():
     global endSerialThread
     endSerialThread=True
     
+    
+
+
+def doWashout():
+    global washoutcmd,washoutraw,endSerialThread
+
+    while not endSerialThread:
+        ax,ay,az,wz = copy.deepcopy(washoutraw[0]), copy.deepcopy(washoutraw[1]), copy.deepcopy(washoutraw[2]), copy.deepcopy(washoutraw[3])
+        x,y,z,roll,pitch,yaw = washalg.doWashout(ax,ay,az,wz)
+        if(abs(yaw)>.1):
+            yaw = sign(yaw)*.1
+        yaw = float(yaw)
+        
+        x,y,z,roll,pitch,yaw = x/.0254,y/.0254,z/.0254,roll*1.0,pitch*1.0,yaw*1.0
+
+        washoutcmd = [x,y,z,roll,pitch,yaw]
+        time.sleep(washdt)
 
 
 
 ############## Function to communicate with Arduino ###########
 def doPlatform():
-    global cmd,ser,endSerialThread
+    global cmd,ser,endSerialThread,washoutcmd
     #initialize old time
     arduino_delay = 0.1
 
@@ -71,7 +110,12 @@ def doPlatform():
     lastsendtime = time.time()-starttime
     #this is an infinite loop  .
     while not endSerialThread:
-        cmdlocal = copy.deepcopy(cmd)
+        if not washoutBool.get():
+            print("pose commands")
+            cmdlocal = copy.deepcopy(cmd)
+        else:
+            print("washout")
+            cmdlocal = copy.deepcopy(washoutcmd)
         #get current time
         tnow = time.time()-starttime
         # print(tnow-lastsendtime)
@@ -79,12 +123,12 @@ def doPlatform():
             #print 'sent'
             print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
             lastsendtime = tnow
-            ser.write('!')
+            ser.write('!'.encode())
             for ind in range(0,len(cmdlocal)-1):
-              ser.write(format(cmdlocal[ind],'0.4f'))
-              ser.write(',')
-            ser.write(format(cmdlocal[-1],'0.4f'))
-            ser.write('\n')
+              ser.write(format(cmdlocal[ind],'0.4f').encode())
+              ser.write(','.encode())
+            ser.write(format(cmdlocal[-1],'0.4f').encode())
+            ser.write('\n'.encode())
             # time.sleep(0.01)
             #line = ser.readline()
             #print ("at time = "+format(tnow,'0.2f')+ " received: "+line)
@@ -119,7 +163,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/ttyUSB100")
+portentry.insert(0,"/dev/ttyACM0")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(
@@ -158,13 +202,13 @@ yawframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 yawframe.pack()
 yawlabel = tk.Label(yawframe,text="yaw (rad)")
 yawlabel.pack(side=tk.LEFT)
-yawslider = tk.Scale(yawframe,orient=tk.HORIZONTAL,from_=-0.1,to=0.1,resolution=.001,command=yawcallback,length=400)
+yawslider = tk.Scale(yawframe,orient=tk.HORIZONTAL,from_=-0.15,to=0.15,resolution=.001,command=yawcallback,length=400)
 yawslider.pack(side=tk.RIGHT)
 
 #create a slider for x
 xframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 xframe.pack()
-xlabel = tk.Label(xframe,text="x (inches)")
+xlabel = tk.Label(xframe,text="x (in)")
 xlabel.pack(side=tk.LEFT)
 xslider = tk.Scale(xframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=xcallback,length=400)
 xslider.pack(side=tk.RIGHT)
@@ -172,7 +216,7 @@ xslider.pack(side=tk.RIGHT)
 #create a slider for y
 yframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 yframe.pack()
-ylabel = tk.Label(yframe,text="y (inches)")
+ylabel = tk.Label(yframe,text="y (in)")
 ylabel.pack(side=tk.LEFT)
 yslider = tk.Scale(yframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=ycallback,length=400)
 yslider.pack(side=tk.RIGHT)
@@ -180,7 +224,7 @@ yslider.pack(side=tk.RIGHT)
 #create a slider for z
 zframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
 zframe.pack()
-zlabel = tk.Label(zframe,text="z (inches)")
+zlabel = tk.Label(zframe,text="z (in)")
 zlabel.pack(side=tk.LEFT)
 zslider = tk.Scale(zframe,orient=tk.HORIZONTAL,from_=-2,to=2,resolution=.1,command=zcallback,length=400)
 zslider.pack(side=tk.RIGHT)
@@ -189,6 +233,41 @@ zslider.pack(side=tk.RIGHT)
 echomsg = tk.Label(window,text="No Data Received")
 echomsg.pack()
 
+washoutBool = tk.IntVar(0)
+washcheck = tk.Checkbutton(window, text='Washout (uses bottom sliders)',variable=washoutBool, onvalue=1, offvalue=0)
+washcheck.pack()
+
+#create a slider for ax
+axframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
+axframe.pack()
+axlabel = tk.Label(axframe,text="ax (g)")
+axlabel.pack(side=tk.LEFT)
+axslider = tk.Scale(axframe,orient=tk.HORIZONTAL,from_=-1,to=1,resolution=.1,command=axcallback,length=400)
+axslider.pack(side=tk.RIGHT)
+
+#create a slider for ay
+ayframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
+ayframe.pack()
+aylabel = tk.Label(ayframe,text="ay (g)")
+aylabel.pack(side=tk.LEFT)
+ayslider = tk.Scale(ayframe,orient=tk.HORIZONTAL,from_=-1,to=1,resolution=.1,command=aycallback,length=400)
+ayslider.pack(side=tk.RIGHT)
+
+#create a slider for az
+azframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
+azframe.pack()
+azlabel = tk.Label(azframe,text="az (g)")
+azlabel.pack(side=tk.LEFT)
+azslider = tk.Scale(azframe,orient=tk.HORIZONTAL,from_=-1,to=1,resolution=.1,command=azcallback,length=400)
+azslider.pack(side=tk.RIGHT)
+
+#create a slider for yawrate
+yawrateframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
+yawrateframe.pack()
+yawratelabel = tk.Label(yawrateframe,text="yawrate (rad/s)")
+yawratelabel.pack(side=tk.LEFT)
+yawrateslider = tk.Scale(yawrateframe,orient=tk.HORIZONTAL,from_=-1,to=1,resolution=.01,command=yawratecallback,length=400)
+yawrateslider.pack(side=tk.RIGHT)
 
 
 
