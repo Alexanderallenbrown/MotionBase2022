@@ -61,12 +61,12 @@ def startPlatformThread():
     washoutthread = Thread(target=doWashout)
     platthread.start()
     washoutthread.start()
-    
+
 def cleanupPlatformThread():
     global endSerialThread
     endSerialThread=True
-    
-    
+
+
 
 
 def doWashout():
@@ -78,7 +78,7 @@ def doWashout():
         if(abs(yaw)>.1):
             yaw = sign(yaw)*.1
         yaw = float(yaw)
-        
+
         x,y,z,roll,pitch,yaw = x/.0254,y/.0254,z/.0254,roll*1.0,pitch*1.0,yaw*1.0
 
         washoutcmd = [x,y,z,roll,pitch,yaw]
@@ -96,16 +96,16 @@ def doPlatform():
     #the portentry.get() call gets the port name
     #from the textbox.
     ser = serial.Serial(
-    port=portentry.get(), #ACM100',   #USB0', 
+    port=portentry.get(), #ACM100',   #USB0',
     baudrate=115200,
-    timeout = .1) 
+    timeout = .1)
     print("initializing")
     ser.close()
     time.sleep(2.0)
     ser.open()
     time.sleep(2.0)
-    print("done") 
-    
+    print("done")
+
     starttime = time.time()
     lastsendtime = time.time()-starttime
     #this is an infinite loop  .
@@ -233,7 +233,7 @@ zslider.pack(side=tk.RIGHT)
 echomsg = tk.Label(window,text="No Data Received")
 echomsg.pack()
 
-washoutBool = tk.IntVar(0)
+washoutBool = tk.IntVar()
 washcheck = tk.Checkbutton(window, text='Washout (uses bottom sliders)',variable=washoutBool, onvalue=1, offvalue=0)
 washcheck.pack()
 
