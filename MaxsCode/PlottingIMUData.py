@@ -7,7 +7,7 @@ import serial
 from threading import Thread
 import time
 
-arduino = serial.Serial(port='/dev/tty.usbmodem2101', baudrate=115200, timeout=.1)
+arduino = serial.Serial(port='/dev/cu.usbmodem14701', baudrate=115200, timeout=.01)
 
 placeHolder = False;
 
@@ -23,6 +23,11 @@ yGyro = []
 zGyro = []
 
 timeArduino = []
+
+buffSize = 500
+
+file = open('myfile.txt','w', buffering =1)
+
 
 class Window:
 
@@ -46,40 +51,11 @@ class Window:
         #self.line.set_data(xar, yar)
 
     def animate(self,i):
-        print("hello everyone")
-        x = -1
-        s = 0 
-        while not placeHolder:
-        
-            if x <1:
-
-                file = open('myfile.txt','a', buffering =1)
-            else:
-                file = open('myfile.txt','a', buffering =1)
-
-            data = arduino.readline()
-            data = data.decode() 
-            data = str(data)
-            file.write(data)
-            file.close()
-            x = x+1
-            time.sleep(.1)
-            
-            data = data.split()
-
-            print(data)
-            if x>2:
-                xAccel.append(data[0])
-                yAccel.append(data[1])
-                zAccel.append(data[2])
-
-                xGyro.append(data[3])
-                yGyro.append(data[4])
-                zGyro.append(data[5])
-
-                timeArduino.append(data[6])
-        self.line.set_data(timeArduino[x],zGyro[x])
-            
+        print("hello from plotting func")
+        self.line.set_data(timeArduino,zGyro)
+        self.ax.set_ylim(-10, 10)
+        if len(timeArduino)>0:
+            self.ax.set_xlim(timeArduino[0],timeArduino[-1])
 
 
 """
@@ -94,6 +70,48 @@ def startThread():
 """
 
 
+def serialThread():
+    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino
+    while 1:
+        data = arduino.readline()
+        data = data.decode() 
+        data = str(data)
+        file.write(data)
+        # file.close()
+        # time.sleep(.01)
+        
+        data = data.split()
+        print("hello from serial thread")
+        if(len(data)>6):
+            if len(xAccel)<buffSize:
+                xAccel.append(float(data[0]))
+                yAccel.append(float(data[1]))
+                zAccel.append(float(data[2]))
+
+                xGyro.append(float(data[3]))
+                yGyro.append(float(data[4]))
+                zGyro.append(float(data[5]))
+                timeArduino.append(float(data[6]))
+            else:
+                xAccel = xAccel[1:]
+                yAccel = yAccel[1:]
+                xAccel = zAccel[1:]
+                xGyro = xGyro[1:]
+                yGyro = yGyro[1:]
+                zGyro = zGyro[1:]
+                timeArduino = timeArduino[1:]
+
+                xAccel.append(float(data[0]))
+                yAccel.append(float(data[1]))
+                zAccel.append(float(data[2]))
+
+                xGyro.append(float(data[3]))
+                yGyro.append(float(data[4]))
+                zGyro.append(float(data[5]))
+                timeArduino.append(float(data[6]))
+        time.sleep(0.01)
+
+
 
 xar = timeArduino
 yar = zGyro
@@ -105,8 +123,11 @@ printDataBool = Tk.IntVar()
 printDataCheck = Tk.Checkbutton(root, text = "Start Data", variable = printDataBool) #lots of options here
 printDataCheck.pack()
 
+arduinoThread = Thread(target=serialThread)
+arduinoThread.start()
+
 app = Window(root)
-ani = animation.FuncAnimation(app.fig, app.animate , interval=1000, blit=False)
+ani = animation.FuncAnimation(app.fig, app.animate , interval=500, blit=False)
 
 
 
