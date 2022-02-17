@@ -97,7 +97,7 @@ def doWashout():
 
 ############## Function to communicate with Arduino ###########
 def doPlatform():
-    global cmd,ser,endSerialThread,washoutcmd
+    global cmd,ser,endSerialThread,washoutcmd,arduino
     #initialize old time
     arduino_delay = 0.1
 
@@ -166,7 +166,7 @@ timeArduino = []
 buffSize = 500
 
 
-arduino = serial.Serial(port='/dev/cu.usbmodem1201', baudrate=115200, timeout= 50)
+
 
 class Window:
 
@@ -199,9 +199,11 @@ class Window:
 file = open('myfile.txt','w', buffering =1)
 ### Function to communicate with the arduni for the IMU###
 def doSerial():
-    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino
+    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino,arduino,endSerialThread
+    arduino = serial.Serial(port='/dev/cu.usbserial-1440', baudrate=115200, timeout= 50)
+
+    while not endSerialThread:
     
-    while 1:
         data = arduino.readline()   
         data = data.decode() 
         data = str(data)
@@ -217,7 +219,7 @@ def doSerial():
                 yAccel.append(float(data[1]))
                 zAccel.append(float(data[2]))
 
-                zGyro.append(float(data[3]))
+                xGyro.append(float(data[3]))
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
@@ -238,6 +240,8 @@ def doSerial():
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
+    ser.close()
+
 
 xar = timeArduino
 yar = zGyro
@@ -264,7 +268,7 @@ IMUportmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 IMUportentry = tk.Entry(IMUportframe)
 #insert a default port
-IMUportentry.insert(0,"/dev/cu.usbmodem2101")
+IMUportentry.insert(0,"/dev/cu.usbserial-1440")
 IMUportentry.pack(side=tk.LEFT) 
 
 
@@ -277,7 +281,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/cu.usbmodem1401")
+portentry.insert(0,"/dev/cu.usbmodem14301")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(
