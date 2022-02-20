@@ -30,6 +30,9 @@ washoutraw = [0,0,0,0]
 washdt = .01
 washalg = Washout(washdt)#attempt a .01sec dt
 
+#Plotting Options List
+#PlottingOptions = ["X Acceleration","Y Acceleration","Z Acceleration",
+                    #"X Gyroscope","Y Gyroscope","Z Gyroscope"]
 
 
 
@@ -71,6 +74,7 @@ def startPlatformThread():
     washoutthread.start()
     readSerial.start()
 
+
 def cleanupPlatformThread():
     global endSerialThread
     endSerialThread=True
@@ -97,7 +101,7 @@ def doWashout():
 
 ############## Function to communicate with Arduino ###########
 def doPlatform():
-    global cmd,ser,endSerialThread,washoutcmd,arduino
+    global cmd,ser,endSerialThread,washoutcmd
     #initialize old time
     arduino_delay = 0.1
 
@@ -108,29 +112,29 @@ def doPlatform():
     port=portentry.get(), #ACM100',   #USB0',
     baudrate=115200,
     timeout = .1)
-    print("initializing")
+    #print("initializing")
     ser.close()
     time.sleep(2.0)
     ser.open()
     time.sleep(2.0)
-    print("done")
+    #print("done")
 
     starttime = time.time()
     lastsendtime = time.time()-starttime
     #this is an infinite loop  .
     while not endSerialThread:
         if not washoutBool.get():
-            print("pose commands")
+            #print("pose commands")
             cmdlocal = copy.deepcopy(cmd)
         else:
-            print("washout")
+            #print("washout")
             cmdlocal = copy.deepcopy(washoutcmd)
         #get current time
         tnow = time.time()-starttime
         # print(tnow-lastsendtime)
         if tnow-lastsendtime>arduino_delay:     ### also happens super fast
             #print 'sent'
-            print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
+           # print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
             lastsendtime = tnow
             ser.write('!'.encode())
             for ind in range(0,len(cmdlocal)-1):
@@ -163,17 +167,23 @@ zGyro = []
 
 timeArduino = []
 
+xar = []
+yar = []
+
 buffSize = 500
 
+yPlot = xAccel
 
 
 
-class Window:
+
+class IMUData:
 
     def __init__(self,master):
-        frame = tk.Frame(master)
+        #print("Hello from plotting function")
+        frame = tk.Frame(window)
 
-        self.fig = plt.figure(figsize=(14, 4.5), dpi=100)
+        self.fig = plt.figure(figsize=(10 , 4.5), dpi=100)
 
         self.ax = self.fig.add_subplot(1,1,1)
         self.ax.set_ylim(0, 100)
@@ -190,21 +200,26 @@ class Window:
         #self.line.set_data(xar, yar)
 
     def animate(self,i):
-        print("hello from plotting func")
-        self.line.set_data(timeArduino,zGyro)
-        self.ax.set_ylim(-10, 10)
-        if len(timeArduino)>0:
+        #print("hello from plotting func")
+        self.line.set_data(xar,yar)
+        self.ax.set_ylim(-.5, .5)
+        if len(timeArduino)>0 & len(timeArduino)<buffSize:
+            #print(len(timeArduino))
             self.ax.set_xlim(timeArduino[0],timeArduino[-1])
+        elif len(timeArduino)>0 & len(timeArduino)>buffSize:
+            self.ax.set_xlim(timeArduino[(len(timeArduino)-buffSize)],timeArduino[-1])
+
 
 file = open('myfile.txt','w', buffering =1)
 ### Function to communicate with the arduni for the IMU###
-def doSerial():
-    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino,arduino,endSerialThread
-    arduino = serial.Serial(port='/dev/cu.usbserial-1440', baudrate=115200, timeout= 50)
 
-    while not endSerialThread:
-    
+def doSerial():
+    #print("helo from serial")
+    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar
+    arduino = serial.Serial(port='/dev/cu.usbmodem2101', baudrate=115200, timeout= 50)
+    while 1:
         data = arduino.readline()   
+        #print(data)
         data = data.decode() 
         data = str(data)
         file.write(data)
@@ -212,7 +227,7 @@ def doSerial():
             # time.sleep(.01)
             
         data = data.split()
-        print("hello from serial thread")
+        #print("hello from serial thread")
         if(len(data)>6):
             if len(xAccel)<buffSize:    
                 xAccel.append(float(data[0]))
@@ -223,10 +238,15 @@ def doSerial():
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
+                xar = timeArduino
+                yar = yPlot
+                print("Hello from 1")
+                
+
             else:
                 xAccel = xAccel[1:]
                 yAccel = yAccel[1:]
-                xAccel = zAccel[1:]
+                zAccel = zAccel[1:]
                 xGyro = xGyro[1:]
                 yGyro = yGyro[1:]
                 zGyro = zGyro[1:]
@@ -240,11 +260,28 @@ def doSerial():
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
-    ser.close()
+                xar = timeArduino
+                yar = zGyro
+                print(yPlot)
+
+                #print((zGyro))
+               
 
 
-xar = timeArduino
-yar = zGyro
+
+def change_dropdown(*args):
+    if (PlottingDefault.get() == "xAccel"):
+        yPlot = xAccel
+        print(yPlot)
+    elif (PlottingDefault.get() == "yAccel"):
+        yPlot = yAccel
+    elif(PlottingDefault.get() == "zAccel"):
+        yPlot = zAccel
+
+
+               
+
+
 
 
 ################## GUI SETUP #########################
@@ -255,7 +292,6 @@ window = tk.Tk()
 window.title('Lafayette Motion Platform Control')
 #set window size
 window.geometry("750x750+100+50")
-
 
 #create a frame to hold the serial port configuration
 IMUportframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
@@ -268,7 +304,7 @@ IMUportmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 IMUportentry = tk.Entry(IMUportframe)
 #insert a default port
-IMUportentry.insert(0,"/dev/cu.usbserial-1440")
+IMUportentry.insert(0,"/dev/cu.usbmodem2101")
 IMUportentry.pack(side=tk.LEFT) 
 
 
@@ -281,7 +317,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/cu.usbmodem14301")
+portentry.insert(0,"/dev/cu.usbmodem1301")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(
@@ -300,8 +336,7 @@ statemsg.pack()
 
 
 
-app = Window(window)
-ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
+
 
 
 #create a slider for roll
@@ -392,7 +427,16 @@ yawratelabel.pack(side=tk.LEFT)
 yawrateslider = tk.Scale(yawrateframe,orient=tk.HORIZONTAL,from_=-1,to=1,resolution=.01,command=yawratecallback,length=400)
 yawrateslider.pack(side=tk.RIGHT)
 
+PlottingDefault = tk.StringVar(window) #creates a variable for the default in dropdown
+PlottingDefault.set("xAccel") #create the dropdown menu
 
+PlottingDropdown = tk.OptionMenu(window, PlottingDefault, "xAccel","yAccel","zAccel")
+PlottingDropdown.pack()
+
+PlottingDefault.trace('w', change_dropdown)
+
+app = IMUData(window)
+ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
 
 
 
