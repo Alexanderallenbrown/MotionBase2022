@@ -184,7 +184,7 @@ class IMUData:
         #print("Hello from plotting function")
         frame = tk.Frame(window)
 
-        self.fig = plt.figure(figsize=(10 , 4.5), dpi=100)
+        self.fig = plt.figure(figsize=(10 , 1), dpi=100)
 
         self.ax = self.fig.add_subplot(1,1,1)
         self.ax.set_ylim(0, 100)
@@ -240,7 +240,7 @@ def doSerial():
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
                 xar = timeArduino
-                yar = yPlot
+                yar = xAccel
                 
                 
 
@@ -262,7 +262,7 @@ def doSerial():
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
                 xar = timeArduino
-                yar = yPlot
+                yar = xAccel
                 
 
                 #print((zGyro))
@@ -272,6 +272,7 @@ def doSerial():
 
 
 def change_dropdown():
+    print("this is where the issue lies")
     if (PlottingDefault.get() == "xAccel"):
         yPlot = xAccel
     elif (PlottingDefault.get() == "yAccel"):
@@ -426,18 +427,21 @@ yawratelabel.pack(side=tk.LEFT)
 yawrateslider = tk.Scale(yawrateframe,orient=tk.HORIZONTAL,from_=-1,to=1,resolution=.01,command=yawratecallback,length=400)
 yawrateslider.pack(side=tk.RIGHT)
 
+app = IMUData(window)
+ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
+
 PlottingDefault = tk.StringVar(window) #creates a variable for the default in dropdown
 PlottingDefault.set("xAccel") #create the dropdown menu
+PlottingDefault.trace('w', change_dropdown)
 
 PlottingDropdown = tk.OptionMenu(window, PlottingDefault, *PlottingOptions)
 PlottingDropdown.pack()
 # Create button, it will change label text
-button = tk.Button( window , text = "click Me" , command = change_dropdown ).pack()
+#button = tk.Button( window , text = "click Me" , command = change_dropdown ).pack()
 
-#PlottingDefault.trace('w', change_dropdown)
 
-app = IMUData(window)
-ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
+
+
 
 
 
