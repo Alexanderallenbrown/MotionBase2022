@@ -4,6 +4,7 @@ import time
 from numpy import *
 from scipy.signal import *
 from matplotlib.pyplot import *
+from tkinter import *
 import sys,traceback
 import serial
 from threading import Thread
@@ -31,7 +32,7 @@ washdt = .01
 washalg = Washout(washdt)#attempt a .01sec dt
 
 #Plotting Options List
-#PlottingOptions = ["X Acceleration","Y Acceleration","Z Acceleration",
+PlottingOptions = ["xAccel","yAccel","zAccel"]
                     #"X Gyroscope","Y Gyroscope","Z Gyroscope"]
 
 
@@ -172,7 +173,7 @@ yar = []
 
 buffSize = 500
 
-yPlot = xAccel
+yPlot = []
 
 
 
@@ -215,7 +216,7 @@ file = open('myfile.txt','w', buffering =1)
 
 def doSerial():
     #print("helo from serial")
-    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar
+    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot
     arduino = serial.Serial(port='/dev/cu.usbmodem2101', baudrate=115200, timeout= 50)
     while 1:
         data = arduino.readline()   
@@ -240,7 +241,7 @@ def doSerial():
                 timeArduino.append(float(data[6]))
                 xar = timeArduino
                 yar = yPlot
-                print("Hello from 1")
+                
                 
 
             else:
@@ -261,22 +262,24 @@ def doSerial():
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
                 xar = timeArduino
-                yar = zGyro
-                print(yPlot)
+                yar = yPlot
+                
 
                 #print((zGyro))
-               
+    else:
+        quit()
 
 
 
-def change_dropdown(*args):
+def change_dropdown():
     if (PlottingDefault.get() == "xAccel"):
         yPlot = xAccel
-        print(yPlot)
     elif (PlottingDefault.get() == "yAccel"):
         yPlot = yAccel
     elif(PlottingDefault.get() == "zAccel"):
         yPlot = zAccel
+    else:
+        yPlot = []
 
 
                
@@ -333,10 +336,6 @@ killbut.pack(side=tk.RIGHT)
 #create a status message in this frame to show serial port status
 statemsg = tk.Label(window,text="Not Connected")
 statemsg.pack()
-
-
-
-
 
 
 #create a slider for roll
@@ -430,10 +429,12 @@ yawrateslider.pack(side=tk.RIGHT)
 PlottingDefault = tk.StringVar(window) #creates a variable for the default in dropdown
 PlottingDefault.set("xAccel") #create the dropdown menu
 
-PlottingDropdown = tk.OptionMenu(window, PlottingDefault, "xAccel","yAccel","zAccel")
+PlottingDropdown = tk.OptionMenu(window, PlottingDefault, *PlottingOptions)
 PlottingDropdown.pack()
+# Create button, it will change label text
+button = tk.Button( window , text = "click Me" , command = change_dropdown ).pack()
 
-PlottingDefault.trace('w', change_dropdown)
+#PlottingDefault.trace('w', change_dropdown)
 
 app = IMUData(window)
 ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
