@@ -32,8 +32,9 @@ washdt = .01
 washalg = Washout(washdt)#attempt a .01sec dt
 
 #Plotting Options List
-PlottingOptions = ["xAccel","yAccel","zAccel"]
-                    #"X Gyroscope","Y Gyroscope","Z Gyroscope"]
+PlottingOptions = {"xAccel":"1","yAccel":"2","zAccel":"3",
+                    "xGyro":"4","yGyro":"5","zGyro":"6"}
+                 
 
 
 
@@ -171,6 +172,9 @@ timeArduino = []
 xar = []
 yar = []
 
+xDes = []
+yDes = []
+
 buffSize = 500
 
 yPlot = []
@@ -182,33 +186,33 @@ class IMUData:
 
     def __init__(self,master):
         #print("Hello from plotting function")
-        frame = tk.Frame(window)
+        frame = tk.Frame(window) #prepping for the plotter
 
-        self.fig = plt.figure(figsize=(10 , 1), dpi=100)
+        self.fig = plt.figure(figsize=(10 , 1), dpi=100) #define size of plot
 
-        self.ax = self.fig.add_subplot(1,1,1)
-        self.ax.set_ylim(0, 100)
-        self.line, = self.ax.plot(xar, yar)
+        self.ax = self.fig.add_subplot(1,1,1) 
+        self.ax.set_ylim(0, 100) #set initial y limits
+        self.line, = self.ax.plot(xar, yar) #tell it what to plot
+        self.line, = self.ax.plot(xDes,yDes)
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side='top', fill='x', expand=1)
         frame.pack()
 
-    #def animate(self,i):
-        #yar.append(99-i)
-        #xar.append(i)
-        #self.line.set_data(xar, yar)
 
     def animate(self,i):
         #print("hello from plotting func")
         self.line.set_data(xar,yar)
-        self.ax.set_ylim(-.5, .5)
+        self.line.set_data(xDes,yDes) #starting to add in the line for desired plot
+        
         if len(timeArduino)>0 & len(timeArduino)<buffSize:
             #print(len(timeArduino))
-            self.ax.set_xlim(timeArduino[0],timeArduino[-1])
+            self.ax.set_xlim(timeArduino[0],timeArduino[-1]) #set the x limit of plot to update with values
+            self.ax.set_ylim(-max(yar)-3, max(yar)+3) #set y limit of the live plot to update with max values
         elif len(timeArduino)>0 & len(timeArduino)>buffSize:
             self.ax.set_xlim(timeArduino[(len(timeArduino)-buffSize)],timeArduino[-1])
+            set.ax.set_ylim(-max(yar),max(yar))
 
 
 file = open('myfile.txt','w', buffering =1)
@@ -216,8 +220,9 @@ file = open('myfile.txt','w', buffering =1)
 
 def doSerial():
     #print("helo from serial")
-    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot
-    arduino = serial.Serial(port='/dev/cu.usbmodem2101', baudrate=115200, timeout= 50)
+    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot, v,x
+    x =1
+    arduino = serial.Serial(port=IMUportentry.get(), baudrate=115200, timeout= 50)
     while 1:
         data = arduino.readline()   
         #print(data)
@@ -239,9 +244,23 @@ def doSerial():
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
+                print(v.get())
                 xar = timeArduino
-                yar = xAccel
-                
+                if v.get() == "1":
+                    yar = xAccel
+                elif v.get() == "2":
+                    yar = yAccel
+                elif v.get() == "3":
+                    yar = zAccel
+                elif v.get() == "4":
+                    yar = xGyro
+                elif v.get() == "5":
+                    yar = yGyro
+                else:
+                    yar = zGyro
+
+                xDes = timeArduino #just creating some fake test data
+                ydes = x+1
                 
 
             else:
@@ -261,8 +280,21 @@ def doSerial():
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6]))
+
+                print(v.get())
                 xar = timeArduino
-                yar = xAccel
+                if v.get() == "1":
+                    yar = xAccel
+                elif v.get() == "2":
+                    yar = yAccel
+                elif v.get() == "3":
+                    yar = zAccel
+                elif v.get() == "4":
+                    yar = xGyro
+                elif v.get() == "5":
+                    yar = yGyro
+                else:
+                    yar = zGyro
                 
 
                 #print((zGyro))
@@ -271,16 +303,6 @@ def doSerial():
 
 
 
-def change_dropdown():
-    print("this is where the issue lies")
-    if (PlottingDefault.get() == "xAccel"):
-        yPlot = xAccel
-    elif (PlottingDefault.get() == "yAccel"):
-        yPlot = yAccel
-    elif(PlottingDefault.get() == "zAccel"):
-        yPlot = zAccel
-    else:
-        yPlot = []
 
 
                
@@ -308,7 +330,7 @@ IMUportmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 IMUportentry = tk.Entry(IMUportframe)
 #insert a default port
-IMUportentry.insert(0,"/dev/cu.usbmodem2101")
+IMUportentry.insert(0,"/dev/cu.usbmodem2201")
 IMUportentry.pack(side=tk.LEFT) 
 
 
@@ -321,7 +343,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/cu.usbmodem1301")
+portentry.insert(0,"/dev/cu.usbmodem2101")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(
@@ -430,12 +452,16 @@ yawrateslider.pack(side=tk.RIGHT)
 app = IMUData(window)
 ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
 
-PlottingDefault = tk.StringVar(window) #creates a variable for the default in dropdown
-PlottingDefault.set("xAccel") #create the dropdown menu
-PlottingDefault.trace('w', change_dropdown)
+v = StringVar(window,"1")
 
-PlottingDropdown = tk.OptionMenu(window, PlottingDefault, *PlottingOptions)
-PlottingDropdown.pack()
+
+#creating the radio button
+for (text,value) in PlottingOptions.items():
+    Radiobutton(window,text=text,variable=v,value=value).pack(side = "left")
+
+
+
+
 # Create button, it will change label text
 #button = tk.Button( window , text = "click Me" , command = change_dropdown ).pack()
 
