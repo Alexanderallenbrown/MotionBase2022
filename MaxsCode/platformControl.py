@@ -215,7 +215,7 @@ file = open('myfile.txt','w', buffering =1) #opening the text file for the data
 
 def doSerial():
     #print("helo from serial")
-    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot, v,x
+    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot, v,x, xDes, yDes
     y =1
     arduino = serial.Serial(port=IMUportentry.get(), baudrate=115200, timeout= 50)
     while not endSerialThread:
@@ -302,13 +302,6 @@ def doSerial():
                 #print((zGyro))
     arduino.close()
      
-
-
-
-
-
-               
-
 
 
 
