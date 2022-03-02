@@ -71,11 +71,13 @@ def startPlatformThread():
     statemsg["text"] = "Connected"
     platthread = Thread(target=doPlatform)
     washoutthread = Thread(target=doWashout)
-    readSerial = Thread(target = doSerial)
     platthread.start()
     washoutthread.start()
-    readSerial.start()
+    
 
+def startIMUThread():
+    readSerial = Thread(target = doSerial)
+    readSerial.start()
 
 def cleanupPlatformThread():
     global endSerialThread
@@ -144,11 +146,6 @@ def doPlatform():
               ser.write(','.encode())
             ser.write(format(cmdlocal[-1],'0.4f').encode())
             ser.write('\n'.encode())
-            # time.sleep(0.01)
-            #line = ser.readline()
-            #print ("at time = "+format(tnow,'0.2f')+ " received: "+line)
-            #print(line)
-            #echomsg["text"] = "at t = "+format(tnow,'0.2f')+" received: "+line
         else:
           time.sleep(.1)
         # print(cmd)
@@ -180,8 +177,6 @@ buffSize = 500
 yPlot = []
 
 
-
-
 class IMUData:
 
     def __init__(self,master):
@@ -193,18 +188,18 @@ class IMUData:
         self.ax = self.fig.add_subplot(1,1,1) 
         self.ax.set_ylim(0, 100) #set initial y limits
         self.line, = self.ax.plot(xar, yar) #tell it what to plot
-        self.line, = self.ax.plot(xDes,yDes)
+        self.line2, = self.ax.plot(xDes,yDes) #Trying to add a second line to the plot
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=master)
         self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side='top', fill='x', expand=1)
+        self.canvas.get_tk_widget().pack(side='top', fill='x', expand=1) #actually putting the canvas on the page
         frame.pack()
 
 
     def animate(self,i):
         #print("hello from plotting func")
         self.line.set_data(xar,yar)
-        self.line.set_data(xDes,yDes) #starting to add in the line for desired plot
+        self.line2.set_data(xDes,yDes) #Trying to add in a line for the second plot, unsuccessful as of now
         
         if len(timeArduino)>0 & len(timeArduino)<buffSize:
             #print(len(timeArduino))
@@ -212,23 +207,23 @@ class IMUData:
             self.ax.set_ylim(-max(yar)-3, max(yar)+3) #set y limit of the live plot to update with max values
         elif len(timeArduino)>0 & len(timeArduino)>buffSize:
             self.ax.set_xlim(timeArduino[(len(timeArduino)-buffSize)],timeArduino[-1])
-            set.ax.set_ylim(-max(yar),max(yar))
+            self.ax.set_ylim(-max(yar),max(yar))
 
 
-file = open('myfile.txt','w', buffering =1)
+file = open('myfile.txt','w', buffering =1) #opening the text file for the data
 ### Function to communicate with the arduni for the IMU###
 
 def doSerial():
     #print("helo from serial")
     global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot, v,x
-    x =1
+    y =1
     arduino = serial.Serial(port=IMUportentry.get(), baudrate=115200, timeout= 50)
-    while 1:
+    while not endSerialThread:
         data = arduino.readline()   
         #print(data)
         data = data.decode() 
         data = str(data)
-        file.write(data)
+        file.write(data) #getting the data and writing it to a text file
             # file.close()
             # time.sleep(.01)
             
@@ -236,6 +231,7 @@ def doSerial():
         #print("hello from serial thread")
         if(len(data)>6):
             if len(xAccel)<buffSize:    
+                y=y+1
                 xAccel.append(float(data[0]))
                 yAccel.append(float(data[1]))
                 zAccel.append(float(data[2]))
@@ -243,8 +239,8 @@ def doSerial():
                 xGyro.append(float(data[3]))
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
-                timeArduino.append(float(data[6]))
-                print(v.get())
+                timeArduino.append(float(data[6])) #adding data to the array
+                #print(v.get())
                 xar = timeArduino
                 if v.get() == "1":
                     yar = xAccel
@@ -252,7 +248,7 @@ def doSerial():
                     yar = yAccel
                 elif v.get() == "3":
                     yar = zAccel
-                elif v.get() == "4":
+                elif v.get() == "4":   #These are for the radio button choices
                     yar = xGyro
                 elif v.get() == "5":
                     yar = yGyro
@@ -260,17 +256,19 @@ def doSerial():
                     yar = zGyro
 
                 xDes = timeArduino #just creating some fake test data
-                ydes = x+1
+                yDes = zGyro
+                print(yDes)
                 
 
             else:
+                y = y+1
                 xAccel = xAccel[1:]
                 yAccel = yAccel[1:]
                 zAccel = zAccel[1:]
                 xGyro = xGyro[1:]
                 yGyro = yGyro[1:]
                 zGyro = zGyro[1:]
-                timeArduino = timeArduino[1:]
+                timeArduino = timeArduino[1:] #this removes the first index of the array to make space for a new one
 
                 xAccel.append(float(data[0]))
                 yAccel.append(float(data[1]))
@@ -279,27 +277,31 @@ def doSerial():
                 xGyro.append(float(data[3]))
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
-                timeArduino.append(float(data[6]))
+                timeArduino.append(float(data[6])) #adding data to the array
 
-                print(v.get())
+                #print(v.get())
                 xar = timeArduino
                 if v.get() == "1":
                     yar = xAccel
                 elif v.get() == "2":
                     yar = yAccel
                 elif v.get() == "3":
-                    yar = zAccel
+                    yar = zAccel                #radio button choices
                 elif v.get() == "4":
                     yar = xGyro
                 elif v.get() == "5":
                     yar = yGyro
                 else:
                     yar = zGyro
+
+                xDes = timeArduino 
+                yDes = zGyro #Just need some sort of data coming through as I try to get second line
+                print(yDes)
                 
 
                 #print((zGyro))
-    else:
-        quit()
+    arduino.close()
+     
 
 
 
@@ -330,8 +332,11 @@ IMUportmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 IMUportentry = tk.Entry(IMUportframe)
 #insert a default port
-IMUportentry.insert(0,"/dev/cu.usbmodem2201")
+IMUportentry.insert(0,"/dev/cu.usbmodem2101")
 IMUportentry.pack(side=tk.LEFT) 
+
+IMUbut = tk.Button(IMUportframe, text = "Connect",command = startIMUThread)
+IMUbut.pack(side=tk.RIGHT)
 
 
 #create a frame to hold the serial port configuration
@@ -343,7 +348,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/cu.usbmodem2101")
+portentry.insert(0,"/dev/cu.usbmodem2201")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(
@@ -449,26 +454,14 @@ yawratelabel.pack(side=tk.LEFT)
 yawrateslider = tk.Scale(yawrateframe,orient=tk.HORIZONTAL,from_=-1,to=1,resolution=.01,command=yawratecallback,length=400)
 yawrateslider.pack(side=tk.RIGHT)
 
+#Plotting stuff
 app = IMUData(window)
 ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
 
-v = StringVar(window,"1")
-
-
-#creating the radio button
+#Radio Button stuff
+v = StringVar(window,"1") #variable that keeps track of radio button
 for (text,value) in PlottingOptions.items():
-    Radiobutton(window,text=text,variable=v,value=value).pack(side = "left")
-
-
-
-
-# Create button, it will change label text
-#button = tk.Button( window , text = "click Me" , command = change_dropdown ).pack()
-
-
-
-
-
+    Radiobutton(window,text=text,variable=v,value=value).pack(side = "left") #creating the radio button
 
 
 """ ADD THIS AS A CHECK BUTTON TO PLOT IMU CODE OR NOT
