@@ -69,6 +69,12 @@ class Washout:
     # instead of "y" for yaw we will use "a" for "azimuth"
     (self.numahp,self.denahp,self.dtahp) = cont2discrete(([1.,0],[1.,5.,8.,4.]),self.dt,method='zoh')
 
+    #filter 7: High pass filter producing an x acceleration, without the leak, created random zeta and omega_n for testing
+    (self.numAccYhp,self.denAccYhp,self.dtAccYhp) = cont2discrete (([1.,0,0],[1,(2*.7*1**2),(1**2)]),self.dt,method='zoh')
+
+
+
+    ## need to add in another TF here that is s^2/s^2 * 2 zeta omega s * omega^2
 
   #this function gets called over and over in the loop. It takes in accelerations and yaw rate
   #it produces and updated guess for the simulated accelerations and yaw rates.
@@ -93,10 +99,13 @@ class Washout:
     zfilt = 1./self.denzhp[0]*(-self.denzhp[1]*self.zvec[-1] - self.denzhp[2]*self.zvec[-2] - self.denzhp[3]*self.zvec[-3] + (ay_raw*self.numzhp[0][0] + self.azrawvec[-1]*self.numzhp[0][1] + self.azrawvec[-2]*self.numzhp[0][2]+ self.azrawvec[-3]*self.numzhp[0][3]))
     afilt = 1./self.denahp[0]*(-self.denahp[1]*self.avec[-1] - self.denahp[2]*self.avec[-2] - self.denahp[3]*self.avec[-3] + (wz_raw*self.numahp[0][0] + self.wzrawvec[-1]*self.numahp[0][1] + self.wzrawvec[-2]*self.numahp[0][2]+ self.wzrawvec[-3]*self.numahp[0][3]))
 
-    #all low pass filters below
+    #all low pass filters below: Need to finish adding in the rest of these
     axfilt = 1./self.denxlp[0]*(-self.denxlp[1]*self.axvec[-1] - self.denxlp[2]*self.axvec[-2] + (self.dt*ax_raw*self.numxlp[0][0] + self.axrawvec[-1]*self.numxlp[0][-1]))
     ayfilt = 1./self.denylp[0]*(-self.denylp[1]*self.ayvec[-1] - self.denylp[2]*self.ayvec[-2] + (self.dt*ay_raw*self.numylp[0][0] + self.ayrawvec[-1]*self.numylp[0][-1]))
 
+    #High pass filters that produce the accelerations 
+    #accelX
+    accelYfilt = 1./self.denAccYhp[0]*(-self.denAccYhp[1]*self.yvec[-1] - self.denAccYhp[2]*self.yvec[-2]  + (ay_raw*self.numAccYhp[0][0] + self.ayrawvec[-1]*self.numAccYhp[0][1] + self.ayrawvec[-2]*self.numAccYhp[0][2]))
     #now we can compute the tilt angles in RADIANS.
     #positive roll is to driver's right side, so to feel like accelerating in positive y (drive left), need to take neg
     roll = arcsin(ayfilt)
@@ -121,8 +130,10 @@ class Washout:
     self.azrawvec.pop(0);self.azrawvec.append(az_raw)
     self.wzrawvec.pop(0);self.wzrawvec.append(wz_raw)
 
+    print(accelYfilt)
+
     #now return the commands to the platform. each call to this function returns the scalar value that's relevant NOW
-    return xfilt,yfilt,zfilt,roll,pitch,afilt
+    return xfilt,yfilt,zfilt,roll,pitch,afilt,accelYfilt
 
 
 ####### this bottom "if" only runs if you run this file as a script, like $python washout.py
@@ -155,34 +166,39 @@ if __name__ == "__main__" :
   wash = Washout(dt)#be sure to specify the CORRECT dt to the best of your ability!
 
   #create a matrix to hold our platform commands x,y,z,roll,pitch,yaw
-  cmdvec = zeros((len(tsim),6))#each row will represent commands at a particular timestep
+  cmdvec = zeros((len(tsim),7))#each row will represent commands at a particular timestep
 
   #now set up a for-loop to simulate this happening.
   #in "live" setting, this is a "while 1" infinite loop, and you're just calling the washout each time.
   for k in range(0,len(tsim)):
     #IRL you'd measure ax,ay,az,wz from a simulation, then to this to get commands.
     #we are pulling commands out of a vector because we've pre-stored them... but you would just use like ax/g...
-    x,y,z,roll,pitch,yaw = wash.doWashout(ax[k]/g,ay[k]/g,az[k]/g,wz[k])
+    x,y,z,roll,pitch,yaw,yAccel = wash.doWashout(ax[k]/g,ay[k]/g,az[k]/g,wz[k])
     #now for plotting, store everything in our array of commands
-    cmdvec[k,:] = array([x,y,z,roll,pitch,yaw])
+    cmdvec[k,:] = array([x,y,z,roll,pitch,yaw,yAccel])
 
   #now we've gotten our results, so let's plot
   figure(figsize=(18, 6), dpi=80)
-  subplot(131)
+  subplot(141)
   plot(tsim,cmdvec[:,1],'k')
   xlabel('Time (s)')
   ylabel('y position (m)')
   grid('on')
-  subplot(132)
+  subplot(142)
   plot(tsim,cmdvec[:,3]*180/pi*2,'k')
   xlabel('Time (s)')
   ylabel('roll angle (deg)')
   grid('on')
-  subplot(133)
+  subplot(143)
   plot(tsim,cmdvec[:,5],'k')
   grid('on')
   xlabel('Time (s)')
   ylabel('yaw angle (rad)')
+  subplot(144)
+  plot(tsim,cmdvec[:,6])
+  grid ('on')
+  xlabel('Time (s)')
+  ylabel('Y Acceleration')
 
   axis('tight')
 
