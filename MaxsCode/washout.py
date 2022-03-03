@@ -100,8 +100,8 @@ class Washout:
     afilt = 1./self.denahp[0]*(-self.denahp[1]*self.avec[-1] - self.denahp[2]*self.avec[-2] - self.denahp[3]*self.avec[-3] + (wz_raw*self.numahp[0][0] + self.wzrawvec[-1]*self.numahp[0][1] + self.wzrawvec[-2]*self.numahp[0][2]+ self.wzrawvec[-3]*self.numahp[0][3]))
 
     #all low pass filters below: Need to finish adding in the rest of these
-    axfilt = 1./self.denxlp[0]*(-self.denxlp[1]*self.axvec[-1] - self.denxlp[2]*self.axvec[-2] + (self.dt*ax_raw*self.numxlp[0][0] + self.axrawvec[-1]*self.numxlp[0][-1]))
-    ayfilt = 1./self.denylp[0]*(-self.denylp[1]*self.ayvec[-1] - self.denylp[2]*self.ayvec[-2] + (self.dt*ay_raw*self.numylp[0][0] + self.ayrawvec[-1]*self.numylp[0][-1]))
+    axfilt = 1./self.denxlp[0]*(-self.denxlp[1]*self.axvec[-1] - self.denxlp[2]*self.axvec[-2] + (ax_raw*self.numxlp[0][0] + self.axrawvec[-1]*self.numxlp[0][-1]))
+    ayfilt = 1./self.denylp[0]*(-self.denylp[1]*self.ayvec[-1] - self.denylp[2]*self.ayvec[-2] + (ay_raw*self.numylp[0][0] + self.ayrawvec[-1]*self.numylp[0][-1]))
 
     #High pass filters that produce the accelerations 
     #accelX
