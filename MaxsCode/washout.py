@@ -35,6 +35,7 @@ class Washout:
     self.ayrawvec = [0,0,0,0,0] #raw (input) y acceleration (m/s/s)
     self.azrawvec = [0,0,0,0,0] #raw (input) z acceleration (m/s/s)
     self.wzrawvec = [0,0,0,0,0] #raw (input) yaw rate (rad/s)
+    self.ayfiltvec = [0,0,0,0] #filtered ay (without leak)
     self.g = 9.81
 
   def updateFilterCoefficients(self,dt):
@@ -105,7 +106,7 @@ class Washout:
 
     #High pass filters that produce the accelerations 
     #accelX
-    accelYfilt = 1./self.denAccYhp[0]*(-self.denAccYhp[1]*self.yvec[-1] - self.denAccYhp[2]*self.yvec[-2]  + (ay_raw*self.numAccYhp[0][0] + self.ayrawvec[-1]*self.numAccYhp[0][1] + self.ayrawvec[-2]*self.numAccYhp[0][2]))
+    accelYfilt = 1./self.denAccYhp[0]*(-self.denAccYhp[1]*self.ayfiltvec[-1] - self.denAccYhp[2]*self.ayfiltvec[-2]  + (ay_raw*self.numAccYhp[0][0] + self.ayrawvec[-1]*self.numAccYhp[0][1] + self.ayrawvec[-2]*self.numAccYhp[0][2]))
     #now we can compute the tilt angles in RADIANS.
     #positive roll is to driver's right side, so to feel like accelerating in positive y (drive left), need to take neg
     roll = arcsin(ayfilt)
@@ -121,6 +122,7 @@ class Washout:
     self.axvec.pop(0);self.axvec.append(axfilt)
     self.ayvec.pop(0);self.ayvec.append(ayfilt)
     self.avec.pop(0);self.avec.append(afilt)
+    self.ayfiltvec.pop(0);self.ayfiltvec.append(accelYfilt)
 
     #now we put raw input values in their "lagged" arrays so we can use "old" values in the filter as required.
     #pop(0) removes the first element in the array. append() adds a new value to the end.
