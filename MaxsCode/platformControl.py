@@ -18,8 +18,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.animation as animation
 
 
-
-
 #create a global variable to hold the platform command
 cmd = [0,0,0,0,0,0]
 # command = [xdes_final,ydes_final,zdes_final,rdes_final,pdes_final,ades_final]
@@ -30,15 +28,15 @@ washoutraw = [0,0,0,0]
 
 washdt = .01
 washalg = Washout(washdt)#attempt a .01sec dt
+washYaccel = []
 
 #Plotting Options List
 PlottingOptions = {"xAccel":"1","yAccel":"2","zAccel":"3",
                     "xGyro":"4","yGyro":"5","zGyro":"6"}
+
+#washout plotting options
+WashPlottingOptions = {"Washout Y Accel":"1","Washout X Accel":"2","Washout Z Accel":"3"}
                  
-
-
-
-
 
 ############### CALLBACKS FOR SLIDERS ###################
 def rollcallback(v):
@@ -91,14 +89,15 @@ def doWashout():
 
     while not endSerialThread:
         ax,ay,az,wz = copy.deepcopy(washoutraw[0]), copy.deepcopy(washoutraw[1]), copy.deepcopy(washoutraw[2]), copy.deepcopy(washoutraw[3])
-        x,y,z,roll,pitch,yaw = washalg.doWashout(ax,ay,az,wz)
+        x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel = washalg.doWashout(ax,ay,az,wz)
+       
         if(abs(yaw)>.1):
             yaw = sign(yaw)*.1
         yaw = float(yaw)
 
         x,y,z,roll,pitch,yaw = x/.0254,y/.0254,z/.0254,roll*1.0,pitch*1.0,yaw*1.0
 
-        washoutcmd = [x,y,z,roll,pitch,yaw]
+        washoutcmd = [x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel] #added in the washout accels here
         time.sleep(washdt)
 
 
@@ -141,7 +140,7 @@ def doPlatform():
            # print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
             lastsendtime = tnow
             ser.write('!'.encode())
-            for ind in range(0,len(cmdlocal)-1):
+            for ind in range(0,len(cmdlocal)-4): #this is minus 4 to ignore the washout accels that are in this array
               ser.write(format(cmdlocal[ind],'0.4f').encode())
               ser.write(','.encode())
             ser.write(format(cmdlocal[-1],'0.4f').encode())
@@ -158,19 +157,23 @@ def doPlatform():
 
 xAccel = []
 yAccel = []
-zAccel = []
-
+zAccel = []  #arrays for IMU data to dump into
 xGyro = []
 yGyro = []
 zGyro = []
-
 timeArduino = []
 
 xar = []
-yar = []
+yar = [] #x and y data for IMU Plotting
 
 xDes = []
-yDes = []
+yDes = [] #x and y data for washout plotting
+
+plotWashY = []
+plotWashX = []
+plotWashZ = [] #just creating arrays for the washout to dump data to
+
+washoutData = [0,0,0]
 
 buffSize = 500
 
@@ -211,11 +214,12 @@ class IMUData:
 
 
 file = open('myfile.txt','w', buffering =1) #opening the text file for the data
+fileWash = open('washFile.txt','w',buffering=1)
 ### Function to communicate with the arduni for the IMU###
 
 def doSerial():
     #print("helo from serial")
-    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot, v,x, xDes, yDes
+    global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot, v,x, xDes, yDes, plotWashY, plotWashX, plotWashZ,w, washoutData
     y =1
     arduino = serial.Serial(port=IMUportentry.get(), baudrate=115200, timeout= 50)
     while not endSerialThread:
@@ -223,11 +227,9 @@ def doSerial():
         #print(data)
         data = data.decode() 
         data = str(data)
-        file.write(data) #getting the data and writing it to a text file
-            # file.close()
-            # time.sleep(.01)
-            
+        file.write(data) #getting the data and writing it to a text file            
         data = data.split()
+
         #print("hello from serial thread")
         if(len(data)>6):
             if len(xAccel)<buffSize:    
@@ -240,6 +242,15 @@ def doSerial():
                 yGyro.append(float(data[4]))
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6])) #adding data to the array
+
+                plotWashY.append(float(washoutcmd[6]))
+                plotWashX.append(float(washoutcmd[7]))
+                plotWashZ.append(float(washoutcmd[8]))
+
+                washoutData = (plotWashY,plotWashX,plotWashZ)               
+                washoutData = str(washoutData)
+                fileWash.write(washoutData)
+
                 #print(v.get())
                 xar = timeArduino
                 if v.get() == "1":
@@ -255,9 +266,13 @@ def doSerial():
                 else:
                     yar = zGyro
 
-                xDes = timeArduino #just creating some fake test data
-                yDes = zGyro
-                print(yDes)
+                xDes = timeArduino 
+                if w.get() == "1":
+                    yDes = plotWashY
+                elif w.get() == "2":
+                    yDes = plotWashX            #Washout plotting options
+                else:
+                    yDes = plotWashZ
                 
 
             else:
@@ -270,6 +285,10 @@ def doSerial():
                 zGyro = zGyro[1:]
                 timeArduino = timeArduino[1:] #this removes the first index of the array to make space for a new one
 
+                plotWashY = plotWashY[1:]
+                plotWashX = plotWashX[1:]
+                plotWashZ = plotWashZ[1:]
+
                 xAccel.append(float(data[0]))
                 yAccel.append(float(data[1]))
                 zAccel.append(float(data[2]))
@@ -279,6 +298,10 @@ def doSerial():
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6])) #adding data to the array
 
+                plotWashY.append(float(washoutcmd[6])) #washout data collecting
+                plotWashX.append(float(washoutcmd[7]))
+                plotWashZ.append(float(washoutcmd[8]))
+
                 #print(v.get())
                 xar = timeArduino
                 if v.get() == "1":
@@ -286,7 +309,7 @@ def doSerial():
                 elif v.get() == "2":
                     yar = yAccel
                 elif v.get() == "3":
-                    yar = zAccel                #radio button choices
+                    yar = zAccel                #IMU radio button choices
                 elif v.get() == "4":
                     yar = xGyro
                 elif v.get() == "5":
@@ -295,12 +318,14 @@ def doSerial():
                     yar = zGyro
 
                 xDes = timeArduino 
-                yDes = zGyro #Just need some sort of data coming through as I try to get second line
-                print(yDes)
-                
+                if w.get() == "1":
+                    yDes = plotWashY
+                elif w.get() == "2":
+                    yDes = plotWashX            #Washout plotting options
+                else:
+                    yDes = plotWashZ
 
-                #print((zGyro))
-    arduino.close()
+    arduino.close() #closes arduino if disconnect button is pressed
      
 
 
@@ -451,18 +476,14 @@ yawrateslider.pack(side=tk.RIGHT)
 app = IMUData(window)
 ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
 
-#Radio Button stuff
-v = StringVar(window,"1") #variable that keeps track of radio button
+#IMU Radio Button stuff
+v = StringVar(window,"1") #variable that keeps track of radio button for IMU data 
 for (text,value) in PlottingOptions.items():
     Radiobutton(window,text=text,variable=v,value=value).pack(side = "left") #creating the radio button
-
-
-""" ADD THIS AS A CHECK BUTTON TO PLOT IMU CODE OR NOT
-printDataBool = tk.IntVar()
-printDataCheck = tk.Checkbutton(window, text = "Start Data", variable = printDataBool) #lots of options here
-printDataCheck.pack()
-"""
-
+#washout radio button stuff
+w = StringVar(window,"1") #variable that keeps track of radio buttong for washout plotting
+for (text,value) in WashPlottingOptions.items():
+    Radiobutton(window,text=text, variable=w,value=value).pack(side="right")
 
 
 #run the TK mainloop to keep the window up and open.

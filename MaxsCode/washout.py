@@ -36,6 +36,9 @@ class Washout:
     self.azrawvec = [0,0,0,0,0] #raw (input) z acceleration (m/s/s)
     self.wzrawvec = [0,0,0,0,0] #raw (input) yaw rate (rad/s)
     self.ayfiltvec = [0,0,0,0] #filtered ay (without leak)
+    self.axfiltvec = [0,0,0,0] #filtered ax (without leak)
+    self.azfiltvec = [0,0,0,0] #filtered az (without leak)
+    self.yAccel = []
     self.g = 9.81
 
   def updateFilterCoefficients(self,dt):
@@ -70,8 +73,15 @@ class Washout:
     # instead of "y" for yaw we will use "a" for "azimuth"
     (self.numahp,self.denahp,self.dtahp) = cont2discrete(([1.,0],[1.,5.,8.,4.]),self.dt,method='zoh')
 
-    #filter 7: High pass filter producing an x acceleration, without the leak, created random zeta and omega_n for testing
+    #filter 7: High pass filter producing an y acceleration, without the leak, created random zeta and omega_n for testing
     (self.numAccYhp,self.denAccYhp,self.dtAccYhp) = cont2discrete (([1.,0,0],[1,(2*.7*1**2),(1**2)]),self.dt,method='zoh')
+
+    #filter 8: High pass filyer producting an x accleration, without the leak, created random zeta and omega_n for testing
+    (self.numAccXhp,self.denAccXhp,self.dtAccXhp) = cont2discrete (([1.,0,0],[1,(2*.7*1**2),(1**2)]),self.dt,method='zoh')
+
+    #filter 8: High pass filyer producting a z accleration, without the leak, created random zeta and omega_n for testing
+    (self.numAccZhp,self.denAccZhp,self.dtAccZhp) = cont2discrete (([1.,0,0],[1,(2*.7*1**2),(1**2)]),self.dt,method='zoh')
+
 
 
 
@@ -107,6 +117,9 @@ class Washout:
     #High pass filters that produce the accelerations 
     #accelX
     accelYfilt = 1./self.denAccYhp[0]*(-self.denAccYhp[1]*self.ayfiltvec[-1] - self.denAccYhp[2]*self.ayfiltvec[-2]  + (ay_raw*self.numAccYhp[0][0] + self.ayrawvec[-1]*self.numAccYhp[0][1] + self.ayrawvec[-2]*self.numAccYhp[0][2]))
+    accelXfilt = 1./self.denAccXhp[0]*(-self.denAccXhp[1]*self.axfiltvec[-1] - self.denAccXhp[2]*self.axfiltvec[-2]  + (ax_raw*self.numAccXhp[0][0] + self.axrawvec[-1]*self.numAccXhp[0][1] + self.axrawvec[-2]*self.numAccXhp[0][2]))
+    accelZfilt = 1./self.denAccZhp[0]*(-self.denAccZhp[1]*self.azfiltvec[-1] - self.denAccZhp[2]*self.azfiltvec[-2]  + (az_raw*self.numAccZhp[0][0] + self.azrawvec[-1]*self.numAccZhp[0][1] + self.azrawvec[-2]*self.numAccZhp[0][2]))
+
     #now we can compute the tilt angles in RADIANS.
     #positive roll is to driver's right side, so to feel like accelerating in positive y (drive left), need to take neg
     roll = arcsin(ayfilt)
@@ -123,6 +136,8 @@ class Washout:
     self.ayvec.pop(0);self.ayvec.append(ayfilt)
     self.avec.pop(0);self.avec.append(afilt)
     self.ayfiltvec.pop(0);self.ayfiltvec.append(accelYfilt)
+    self.axfiltvec.pop(0);self.axfiltvec.append(accelXfilt)
+    self.azfiltvec.pop(0);self.azfiltvec.append(accelZfilt)
 
     #now we put raw input values in their "lagged" arrays so we can use "old" values in the filter as required.
     #pop(0) removes the first element in the array. append() adds a new value to the end.
@@ -135,7 +150,7 @@ class Washout:
     print(accelYfilt)
 
     #now return the commands to the platform. each call to this function returns the scalar value that's relevant NOW
-    return xfilt,yfilt,zfilt,roll,pitch,afilt,accelYfilt
+    return xfilt,yfilt,zfilt,roll,pitch,afilt,accelYfilt,accelXfilt, accelZfilt
 
 
 ####### this bottom "if" only runs if you run this file as a script, like $python washout.py
@@ -178,6 +193,10 @@ if __name__ == "__main__" :
     x,y,z,roll,pitch,yaw,yAccel = wash.doWashout(ax[k]/g,ay[k]/g,az[k]/g,wz[k])
     #now for plotting, store everything in our array of commands
     cmdvec[k,:] = array([x,y,z,roll,pitch,yaw,yAccel])
+
+    yAccel = cmdvec[k,:]
+
+  
 
   #now we've gotten our results, so let's plot
   figure(figsize=(18, 6), dpi=80)
