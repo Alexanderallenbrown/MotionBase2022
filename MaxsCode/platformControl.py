@@ -35,7 +35,7 @@ PlottingOptions = {"xAccel":"1","yAccel":"2","zAccel":"3",
                     "xGyro":"4","yGyro":"5","zGyro":"6"}
 
 #washout plotting options
-WashPlottingOptions = {"Washout Y Accel":"1","Washout X Accel":"2","Washout Z Accel":"3"}
+WashPlottingOptions = {"Washout X Accel":"1","Washout Y Accel":"2","Washout Z Accel":"3"}
                  
 
 ############### CALLBACKS FOR SLIDERS ###################
@@ -213,7 +213,7 @@ class IMUData:
             self.ax.set_ylim(-max(yar),max(yar))
 
 
-file = open('myfile.txt','w', buffering =1) #opening the text file for the data
+file = open('IMUFile.txt','w', buffering =1) #opening the text file for the data
 fileWash = open('washFile.txt','w',buffering=1)
 ### Function to communicate with the arduni for the IMU###
 
@@ -247,9 +247,9 @@ def doSerial():
                 plotWashX.append(float(washoutcmd[7]))
                 plotWashZ.append(float(washoutcmd[8]))
 
-                washoutData = (plotWashY,plotWashX,plotWashZ)               
-                washoutData = str(washoutData)
-                fileWash.write(washoutData)
+                #washoutData = (plotWashY + plotWashX + plotWashZ)             
+                #washoutData = str(washoutData)
+                fileWash.write(str(plotWashY[-1]) + str(plotWashX[-1]) + str(plotWashZ[-1])) #writing washout data to a file 
 
                 #print(v.get())
                 xar = timeArduino
@@ -302,6 +302,11 @@ def doSerial():
                 plotWashX.append(float(washoutcmd[7]))
                 plotWashZ.append(float(washoutcmd[8]))
 
+                #washoutData = (plotWashY,plotWashX,plotWashZ)             
+                #ashoutData = str(washoutData)
+                #fileWash.write(washoutData)
+                fileWash.write(str(plotWashY[-1]) + ", " + str(plotWashX[-1]) + ", " +  str(plotWashZ[-1]) + " \n") #writing washout data to a file 
+
                 #print(v.get())
                 xar = timeArduino
                 if v.get() == "1":
@@ -319,9 +324,9 @@ def doSerial():
 
                 xDes = timeArduino 
                 if w.get() == "1":
-                    yDes = plotWashY
+                    yDes = plotWashX
                 elif w.get() == "2":
-                    yDes = plotWashX            #Washout plotting options
+                    yDes = plotWashY            #Washout plotting options
                 else:
                     yDes = plotWashZ
 
