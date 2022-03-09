@@ -329,7 +329,7 @@ def doSerial():
                     yDes = plotWashY            #Washout plotting options
                 else:
                     yDes = plotWashZ
-
+        time.sleep(.01)
     arduino.close() #closes arduino if disconnect button is pressed
      
 
@@ -355,7 +355,7 @@ IMUportmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 IMUportentry = tk.Entry(IMUportframe)
 #insert a default port
-IMUportentry.insert(0,"/dev/cu.usbmodem2101")
+IMUportentry.insert(0,"/dev/cu.usbmodem14401")
 IMUportentry.pack(side=tk.LEFT) 
 
 IMUbut = tk.Button(IMUportframe, text = "Connect",command = startIMUThread)
@@ -371,7 +371,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/cu.usbmodem2201")
+portentry.insert(0,"/dev/cu.usbmodem14301")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(
@@ -479,7 +479,7 @@ yawrateslider.pack(side=tk.RIGHT)
 
 #Plotting stuff
 app = IMUData(window)
-ani = animation.FuncAnimation(app.fig, app.animate , interval=5, blit=False)
+ani = animation.FuncAnimation(app.fig, app.animate , interval=250, blit=False)
 
 #IMU Radio Button stuff
 v = StringVar(window,"1") #variable that keeps track of radio button for IMU data 
