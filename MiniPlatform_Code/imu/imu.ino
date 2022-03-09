@@ -58,5 +58,5 @@ void loop(void)
   Serial.print("\t");
   Serial.print(millis()/1000.0);
   Serial.println("");
-  delay(10);
+  delay(20);
 }
