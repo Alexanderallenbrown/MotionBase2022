@@ -186,7 +186,7 @@ class IMUData:
         #print("Hello from plotting function")
         frame = tk.Frame(window) #prepping for the plotter
 
-        self.fig = plt.figure(figsize=(40 , 1), dpi=100) #define size of plot
+        self.fig = plt.figure(figsize=(6 , 4), dpi=100) #define size of plot
 
         self.ax = self.fig.add_subplot(1,1,1) 
         self.ax.set_ylim(0, 100) #set initial y limits
@@ -341,7 +341,7 @@ window = tk.Tk()
 #title the window
 window.title('Lafayette Motion Platform Control')
 #set window size
-window.geometry("750x750+100+50")
+window.geometry("1250x1250+100+50")
 
 #create a frame to hold the serial port configuration
 IMUportframe = tk.Frame(window,relief=tk.GROOVE,borderwidth=3)
@@ -476,7 +476,7 @@ yawratelabel.pack(side=tk.LEFT)
 yawrateslider = tk.Scale(yawrateframe,orient=tk.HORIZONTAL,from_=-1,to=1,resolution=.01,command=yawratecallback,length=400)
 yawrateslider.pack(side=tk.RIGHT)
 
-#Plotting stuff
+#Live IMU Plotting stuff
 app = IMUData(window)
 ani = animation.FuncAnimation(app.fig, app.animate , interval=150, blit=False)
 
