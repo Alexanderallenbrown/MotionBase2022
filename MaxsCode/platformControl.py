@@ -89,7 +89,7 @@ def doWashout():
 
     while not endSerialThread:
         ax,ay,az,wz = copy.deepcopy(washoutraw[0]), copy.deepcopy(washoutraw[1]), copy.deepcopy(washoutraw[2]), copy.deepcopy(washoutraw[3])
-        x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel = washalg.doWashout(ax,ay,az,wz)
+        x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal = washalg.doWashout(ax,ay,az,wz)
        
         if(abs(yaw)>.1):
             yaw = sign(yaw)*.1
@@ -97,7 +97,7 @@ def doWashout():
 
         x,y,z,roll,pitch,yaw = x/.0254,y/.0254,z/.0254,roll*1.0,pitch*1.0,yaw*1.0
 
-        washoutcmd = [x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel] #added in the washout accels here
+        washoutcmd = [x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal] #added in the washout accels here
         time.sleep(washdt)
 
 
@@ -140,13 +140,13 @@ def doPlatform():
            # print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
             lastsendtime = tnow
             ser.write('!'.encode())
-            for ind in range(0,len(cmdlocal)-4): #this is minus 4 to ignore the washout accels that are in this array
+            for ind in range(0,len(cmdlocal)-7): #this is minus 4 to ignore the washout accels that are in this array
               ser.write(format(cmdlocal[ind],'0.4f').encode())
               ser.write(','.encode())
             ser.write(format(cmdlocal[-1],'0.4f').encode())
             ser.write('\n'.encode())
         else:
-          time.sleep(.1)
+          time.sleep(.01)
         # print(cmd)
         # time.sleep(0.1)
     ser.close()
@@ -186,7 +186,7 @@ class IMUData:
         #print("Hello from plotting function")
         frame = tk.Frame(window) #prepping for the plotter
 
-        self.fig = plt.figure(figsize=(10 , 1), dpi=100) #define size of plot
+        self.fig = plt.figure(figsize=(40 , 1), dpi=100) #define size of plot
 
         self.ax = self.fig.add_subplot(1,1,1) 
         self.ax.set_ylim(0, 100) #set initial y limits
@@ -243,14 +243,13 @@ def doSerial():
                 zGyro.append(float(data[5]))
                 timeArduino.append(float(data[6])) #adding data to the array
 
-                plotWashY.append(float(washoutcmd[6]))
-                plotWashX.append(float(washoutcmd[7]))
-                plotWashZ.append(float(washoutcmd[8]))
+                plotWashY.append(float(washoutcmd[9]))
+                plotWashX.append(float(washoutcmd[10]))
+                plotWashZ.append(float(washoutcmd[11]))
 
                 #washoutData = (plotWashY + plotWashX + plotWashZ)             
                 #washoutData = str(washoutData)
-                fileWash.write(str(plotWashY[-1]) + str(plotWashX[-1]) + str(plotWashZ[-1])) #writing washout data to a file 
-
+                fileWash.write(str(plotWashY[-1]) + ", " + str(plotWashX[-1]) + ", " +  str(plotWashZ[-1]) + " \n") #writing washout data to a file 
                 #print(v.get())
                 xar = timeArduino
                 if v.get() == "1":
@@ -355,7 +354,7 @@ IMUportmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 IMUportentry = tk.Entry(IMUportframe)
 #insert a default port
-IMUportentry.insert(0,"/dev/cu.usbmodem14401")
+IMUportentry.insert(0,"/dev/cu.usbmodem2201")
 IMUportentry.pack(side=tk.LEFT) 
 
 IMUbut = tk.Button(IMUportframe, text = "Connect",command = startIMUThread)
@@ -371,7 +370,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/cu.usbmodem14301")
+portentry.insert(0,"/dev/cu.usbmodem2101")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(
@@ -479,7 +478,7 @@ yawrateslider.pack(side=tk.RIGHT)
 
 #Plotting stuff
 app = IMUData(window)
-ani = animation.FuncAnimation(app.fig, app.animate , interval=250, blit=False)
+ani = animation.FuncAnimation(app.fig, app.animate , interval=150, blit=False)
 
 #IMU Radio Button stuff
 v = StringVar(window,"1") #variable that keeps track of radio button for IMU data 

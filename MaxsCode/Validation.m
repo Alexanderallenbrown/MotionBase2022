@@ -32,6 +32,11 @@ yGyro = yGyro(trimAmount(1)+1:end);
 zGyro = zGyro(trimAmount(1)+1:end);
 timeArduino = timeArduino(trimAmount(1)+1:end);
 
+%need to match units of accel, IMU reads in m/s^s and the washout is in G's
+xAccel = xAccel * 0.101971621;
+yAccel = yAccel * 0.101971621;
+zAccel = zAccel * 0.101971621;
+
 %now just need to plot everything
 
 %x accel validation
@@ -42,20 +47,23 @@ plot(timeArduino,washX)
 xlabel('Time, s')
 ylabel('X acceleration')
 title ('X Acceleration Validation Plot')
+legend('IMU Plot','Washout Plot')
 
 figure(2)
 plot(timeArduino,yAccel)
 hold on
 plot(timeArduino,washY)
 xlabel('Time, s')
-ylabel('X acceleration')
-title ('X Acceleration Validation Plot')
+ylabel('Y acceleration')
+title ('Y Acceleration Validation Plot')
+legend('IMU Plot','Washout Plot')
 
 figure(3)
 plot(timeArduino,zAccel)
 hold on
 plot(timeArduino,washZ)
 xlabel('Time, s')
-ylabel('X acceleration')
-title ('X Acceleration Validation Plot')
+ylabel('Z acceleration')
+title ('Z Acceleration Validation Plot')
+legend('IMU Plot','Washout Plot')
 
