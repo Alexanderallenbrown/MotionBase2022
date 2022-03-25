@@ -213,8 +213,8 @@ class IMUData:
             self.ax.set_ylim(-max(yar),max(yar))
 
 
-file = open('IMUFile.txt','w', buffering =1) #opening the text file for the data
-fileWash = open('washFile.txt','w',buffering=1)
+file = open('IMUFileZVal.txt','w', buffering =1) #opening the text file for the data: name this x,y,z validation to be clear about the movement
+fileWash = open('washFileZVal.txt','w',buffering=1)
 ### Function to communicate with the arduni for the IMU###
 
 def doSerial():
