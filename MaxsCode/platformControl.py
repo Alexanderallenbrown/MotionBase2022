@@ -135,6 +135,9 @@ def doPlatform():
         #get current time
         tnow = time.time()-starttime
         # print(tnow-lastsendtime)
+        #HACK to add z offset to platform
+        cmdlocal[2]+=4.0
+
         if tnow-lastsendtime>arduino_delay:     ### also happens super fast
             #print 'sent'
            # print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
@@ -213,8 +216,8 @@ class IMUData:
             self.ax.set_ylim(-max(yar),max(yar))
 
 
-file = open('IMUFileZVal.txt','w', buffering =1) #opening the text file for the data: name this x,y,z validation to be clear about the movement
-fileWash = open('washFileZVal.txt','w',buffering=1)
+file = open('IMUFileValidationFullSize.txt','w', buffering =1) #opening the text file for the data: name this x,y,z validation to be clear about the movement
+fileWash = open('washFileValidationFullSize.txt','w',buffering=1)
 ### Function to communicate with the arduni for the IMU###
 
 def doSerial():
@@ -354,7 +357,7 @@ IMUportmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 IMUportentry = tk.Entry(IMUportframe)
 #insert a default port
-IMUportentry.insert(0,"/dev/cu.usbmodem2201")
+IMUportentry.insert(0,"/dev/ttyACM2")
 IMUportentry.pack(side=tk.LEFT) 
 
 IMUbut = tk.Button(IMUportframe, text = "Connect",command = startIMUThread)
@@ -370,7 +373,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/cu.usbmodem2101")
+portentry.insert(0,"/dev/ttyUSB100")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(

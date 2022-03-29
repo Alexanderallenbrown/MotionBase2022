@@ -60,7 +60,7 @@ const float beta[] = {pi,pi/6+pi/2,pi/6+pi/2+pi,pi/3+pi,pi/3,0},
 servo_min=radians(-80),servo_max=radians(80),
 //servo_mult - multiplier used for conversion radians->servo pulse in us
 //z_home - height of platform above base, 0 is height of servo arms
-servo_mult=1000/(pi/4),L1 = 6.25,L2 = 24.00, z_home = 19.00;
+servo_mult=1000/(pi),L1 = 6.25,L2 = 24.00, z_home = 19.00;
 //RD distance from center of platform to attachment points (arm attachment point)
 //PD distance from center of base to center of servo rotation points (servo axis)
 //theta_p-angle between two servo axis points, theta_r - between platform attachment points
@@ -186,30 +186,30 @@ void loop()
      
      //write to the base
      //Serial.write("hello,");
-     Serial.flush();
+//     Serial.flush();
      setPos(arr); 
      
-//     Serial.print(millis());
-     Serial.print(",");
-     Serial.print(theta_a[0]);
-     Serial.print(",");
-     Serial.print(theta_a[1]);
-     Serial.print(",");
-     Serial.print(theta_a[2]);
-     Serial.print(",");
-     Serial.print(theta_a[3]);
-     Serial.print(",");
-     Serial.print(theta_a[4]);
-     Serial.print(",");
-     Serial.print(theta_a[5]);
-     Serial.println();
+////     Serial.print(millis());
+//     Serial.print(",");
+//     Serial.print(theta_a[0]);
+//     Serial.print(",");
+//     Serial.print(theta_a[1]);
+//     Serial.print(",");
+//     Serial.print(theta_a[2]);
+//     Serial.print(",");
+//     Serial.print(theta_a[3]);
+//     Serial.print(",");
+//     Serial.print(theta_a[4]);
+//     Serial.print(",");
+//     Serial.print(theta_a[5]);
+//     Serial.println();
      
 
   
     }
     }
   }
-delay(10);
+delay(1);
 
 }
 
