@@ -1,8 +1,8 @@
 clc; close all; clear all; 
 
 %bring in data from Python created txt files
-IMUdata = readtable('IMUFileZVal.txt');
-washData = readtable('washFileZVal.txt');
+IMUdata = readtable('IMUFileValidationFullSize.txt');
+washData = readtable('washFileValidationFullSize.txt');
 
 %organize IMU data from python
 xAccel = table2array(IMUdata(:,1));
@@ -41,27 +41,27 @@ zAccel = zAccel * 0.101971621;
 
 %x accel validation
 figure(1)
-plot(timeArduino,(-xAccel+mean(xAccel(1:20))))
+plot(timeArduino(1:1000),(-xAccel(1:1000)+mean(xAccel(1:20))))
 hold on
-plot(timeArduino,washX)
+plot(timeArduino(1:1000),washX(1:1000))
 xlabel('Time, s')
 ylabel('X acceleration')
 title ('X Acceleration Validation Plot')
 legend('IMU Plot','Washout Plot')
 
 figure(2)
-plot(timeArduino,(-yAccel+mean(yAccel(1:20))))
+plot(timeArduino(1:500),(-yAccel(1:500)+mean(yAccel(1:20))))
 hold on
-plot(timeArduino,washY)
+plot(timeArduino(1:1000),washY(1:1000))
 xlabel('Time, s')
 ylabel('Y acceleration')
 title ('Y Acceleration Validation Plot')
 legend('IMU Plot','Washout Plot')
 
 figure(3)
-plot(timeArduino,zAccel)
+plot(timeArduino(1:500),zAccel(1:500))
 hold on
-plot(timeArduino,washZ+.981)
+plot(timeArduino(1:500),washZ(1:500)+.981)
 xlabel('Time, s')
 ylabel('Z acceleration')
 title ('Z Acceleration Validation Plot')
