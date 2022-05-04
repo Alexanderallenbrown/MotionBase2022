@@ -130,3 +130,5 @@ dmypy.json
 
 # prof. brown versions
 interface/brown*.py
+
+MaxsCode/rF2data.py

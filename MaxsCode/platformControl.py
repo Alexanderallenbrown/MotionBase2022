@@ -17,6 +17,8 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.animation as animation
 
+import rF2data as RF2Data
+
 
 #create a global variable to hold the platform command
 cmd = [0,0,0,0,0,0]
@@ -36,7 +38,9 @@ PlottingOptions = {"xAccel":"1","yAccel":"2","zAccel":"3",
 
 #washout plotting options
 WashPlottingOptions = {"Washout X Accel":"1","Washout Y Accel":"2","Washout Z Accel":"3"}
-                 
+
+
+rf2accelInfo = RF2Data.SimInfo()
 
 ############### CALLBACKS FOR SLIDERS ###################
 def rollcallback(v):
@@ -96,8 +100,10 @@ def doWashout():
         yaw = float(yaw)
 
         x,y,z,roll,pitch,yaw = x/.0254,y/.0254,z/.0254,roll*1.0,pitch*1.0,yaw*1.0
-
-        washoutcmd = [x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal] #added in the washout accels here
+        if (f.get() == 0):
+            washoutcmd = [x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal] #added in the washout accels here
+        if (f.get() ==1):
+            washoutcmd = [accelVecX,accelVecY,accelVecZ]
         time.sleep(washdt)
 
 
@@ -111,10 +117,7 @@ def doPlatform():
     #connect to the serial port.
     #the portentry.get() call gets the port name
     #from the textbox.
-    ser = serial.Serial(
-    port=portentry.get(), #ACM100',   #USB0',
-    baudrate=115200,
-    timeout = .1)
+    ser = serial.Serial('COM7', 115200)
     #print("initializing")
     ser.close()
     time.sleep(2.0)
@@ -143,7 +146,7 @@ def doPlatform():
            # print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
             lastsendtime = tnow
             ser.write('!'.encode())
-            for ind in range(0,len(cmdlocal)-7): #this is minus 4 to ignore the washout accels that are in this array
+            for ind in range(0,len(cmdlocal)-6): #this is minus 7 to ignore the washout accels that are in this array
               ser.write(format(cmdlocal[ind],'0.4f').encode())
               ser.write(','.encode())
             ser.write(format(cmdlocal[-1],'0.4f').encode())
@@ -224,7 +227,7 @@ def doSerial():
     #print("helo from serial")
     global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot, v,x, xDes, yDes, plotWashY, plotWashX, plotWashZ,w, washoutData
     y =1
-    arduino = serial.Serial(port=IMUportentry.get(), baudrate=115200, timeout= 50)
+    arduino = serial.Serial('COM5',115200)
     while not endSerialThread:
         data = arduino.readline()   
         #print(data)
@@ -335,6 +338,17 @@ def doSerial():
     arduino.close() #closes arduino if disconnect button is pressed
      
 
+def doRF2():
+    global accelVecX, accelVecY,accelVecZ
+    if (f.get() == 1):
+        while True:
+            accelVecX = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.x #should spit out the acceleration in X direction from RF2
+            accelVecY = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.y #should spit out the acceleration in Y direction from RF2
+            accelVecZ = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.z #should spit out the acceleration in Z direction from RF2
+            print(accelVecX,accelVecY,accelVecZ)
+            
+
+
 
 
 ################## GUI SETUP #########################
@@ -357,7 +371,7 @@ IMUportmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 IMUportentry = tk.Entry(IMUportframe)
 #insert a default port
-IMUportentry.insert(0,"/dev/ttyACM2")
+IMUportentry.insert(0,"COM5")
 IMUportentry.pack(side=tk.LEFT) 
 
 IMUbut = tk.Button(IMUportframe, text = "Connect",command = startIMUThread)
@@ -373,7 +387,7 @@ portmsg.pack(side=tk.LEFT)
 #create a textbox for the port name
 portentry = tk.Entry(portframe)
 #insert a default port
-portentry.insert(0,"/dev/ttyUSB100")
+portentry.insert(0,"COM7")
 portentry.pack(side=tk.LEFT)
 # create a button to connect to platform
 platbut = tk.Button(
@@ -492,6 +506,7 @@ w = StringVar(window,"1") #variable that keeps track of radio buttong for washou
 for (text,value) in WashPlottingOptions.items():
     Radiobutton(window,text=text, variable=w,value=value).pack(side="right")
 
-
+f = tk.IntVar()
+RFBut = tk.Checkbutton(window,text = 'RF2', variable = f, onvalue = 1, offvalue = 0, command = doRF2).pack()
 #run the TK mainloop to keep the window up and open.
 window.mainloop()
