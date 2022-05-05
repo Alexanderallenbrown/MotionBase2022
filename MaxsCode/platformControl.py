@@ -92,7 +92,16 @@ def doWashout():
     global washoutcmd,washoutraw,endSerialThread
 
     while not endSerialThread:
-        ax,ay,az,wz = copy.deepcopy(washoutraw[0]), copy.deepcopy(washoutraw[1]), copy.deepcopy(washoutraw[2]), copy.deepcopy(washoutraw[3])
+        accelVecX = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.x #should spit out the acceleration in X direction from RF2
+        accelVecY = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.y #should spit out the acceleration in Y direction from RF2
+        accelVecZ = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.z #should spit out the acceleration in Z direction from RF2
+        yawRF2 = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalRotAccel.x #yaw rate
+        if (f.get() == 0):
+            ax,ay,az,wz = copy.deepcopy(washoutraw[0]), copy.deepcopy(washoutraw[1]), copy.deepcopy(washoutraw[2]), copy.deepcopy(washoutraw[3])
+        if (f.get() ==1):
+            ax,ay,az,wz = accelVecX,accelVecY,accelVecZ,yawRF2
+            #print(ax,ay,az,wz)
+            
         x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal = washalg.doWashout(ax,ay,az,wz)
        
         if(abs(yaw)>.1):
@@ -100,10 +109,8 @@ def doWashout():
         yaw = float(yaw)
 
         x,y,z,roll,pitch,yaw = x/.0254,y/.0254,z/.0254,roll*1.0,pitch*1.0,yaw*1.0
-        if (f.get() == 0):
-            washoutcmd = [x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal] #added in the washout accels here
-        if (f.get() ==1):
-            washoutcmd = [accelVecX,accelVecY,accelVecZ]
+        washoutcmd = [x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal] #added in the washout accels here
+
         time.sleep(washdt)
 
 
@@ -146,11 +153,13 @@ def doPlatform():
            # print("at t = "+format(tnow,'0.2f')+", sent: "+format(cmdlocal[0],'0.2f')+","+format(cmdlocal[1],'0.2f')+","+format(cmdlocal[2],'0.2f')+","+format(cmdlocal[3],'0.4f')+","+format(cmdlocal[4],'0.4f')+","+format(cmdlocal[5],'0.4f'))
             lastsendtime = tnow
             ser.write('!'.encode())
+       
             for ind in range(0,len(cmdlocal)-6): #this is minus 7 to ignore the washout accels that are in this array
-              ser.write(format(cmdlocal[ind],'0.4f').encode())
-              ser.write(','.encode())
-            ser.write(format(cmdlocal[-1],'0.4f').encode())
-            ser.write('\n'.encode())
+                ser.write(format(cmdlocal[ind],'0.4f').encode())
+                ser.write(','.encode())
+                ser.write(format(cmdlocal[-1],'0.4f').encode())
+                ser.write('\n'.encode())
+
         else:
           time.sleep(.01)
         # print(cmd)
@@ -338,15 +347,15 @@ def doSerial():
     arduino.close() #closes arduino if disconnect button is pressed
      
 
-def doRF2():
-    global accelVecX, accelVecY,accelVecZ
-    if (f.get() == 1):
-        while True:
-            accelVecX = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.x #should spit out the acceleration in X direction from RF2
-            accelVecY = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.y #should spit out the acceleration in Y direction from RF2
-            accelVecZ = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.z #should spit out the acceleration in Z direction from RF2
-            print(accelVecX,accelVecY,accelVecZ)
-            
+##def doRF2():
+##    global accelVecX, accelVecY,accelVecZ, f
+##    if (f.get() == 1):
+##        while True:
+##            accelVecX = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.x #should spit out the acceleration in X direction from RF2
+##            accelVecY = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.y #should spit out the acceleration in Y direction from RF2
+##            accelVecZ = rf2accelInfo.Rf2Tele.mVehicles[0].mLocalAccel.z #should spit out the acceleration in Z direction from RF2
+##            print(accelVecX,accelVecY,accelVecZ)
+##            
 
 
 
@@ -507,6 +516,6 @@ for (text,value) in WashPlottingOptions.items():
     Radiobutton(window,text=text, variable=w,value=value).pack(side="right")
 
 f = tk.IntVar()
-RFBut = tk.Checkbutton(window,text = 'RF2', variable = f, onvalue = 1, offvalue = 0, command = doRF2).pack()
+RFBut = tk.Checkbutton(window,text = 'RF2', variable = f, onvalue = 1, offvalue = 0).pack()
 #run the TK mainloop to keep the window up and open.
 window.mainloop()

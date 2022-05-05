@@ -14,4 +14,5 @@ while True:
       clutch = info.Rf2Tele.mVehicles[0].mUnfilteredClutch # 1.0 clutch down, 0 clutch up
       gear   = info.Rf2Tele.mVehicles[0].mGear  # -1 to 6
       test = info.Rf2Tele.mVehicles[0].mEngineWaterTemp
-      print(accelVecY)
+      yaw = info.Rf2Tele.mVehicles[0].mLocalRotAccel.x
+      print(accelVecX , ' , ' , accelVecY , ' , ' , accelVecZ, yaw)
