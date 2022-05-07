@@ -99,7 +99,7 @@ def doWashout():
         if (f.get() == 0):
             ax,ay,az,wz = copy.deepcopy(washoutraw[0]), copy.deepcopy(washoutraw[1]), copy.deepcopy(washoutraw[2]), copy.deepcopy(washoutraw[3])
         if (f.get() ==1):
-            ax,ay,az,wz = accelVecX,accelVecY,accelVecZ,yawRF2
+            ax,ay,az,wz = (accelVecZ/9.80665,accelVecX/9.80665,accelVecY/9.80665,yawRF2/9.80665)
             #print(ax,ay,az,wz)
             
         x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal = washalg.doWashout(ax,ay,az,wz)
@@ -109,6 +109,7 @@ def doWashout():
         yaw = float(yaw)
 
         x,y,z,roll,pitch,yaw = x/.0254,y/.0254,z/.0254,roll*1.0,pitch*1.0,yaw*1.0
+        #x,y,z,roll,pitch,yaw = x,y,z,roll*1.0,pitch*1.0,yaw*1.0
         washoutcmd = [x,y,z,roll,pitch,yaw,washYaccel,washXaccel,washZaccel,xTotal,yTotal,zTotal] #added in the washout accels here
 
         time.sleep(washdt)
@@ -124,10 +125,10 @@ def doPlatform():
     #connect to the serial port.
     #the portentry.get() call gets the port name
     #from the textbox.
-    ser = serial.Serial('COM7', 115200)
+    ser = serial.Serial('COM13', 115200)
     #print("initializing")
     ser.close()
-    time.sleep(2.0)
+    time.sleep(2.0) 
     ser.open()
     time.sleep(2.0)
     #print("done")
@@ -146,7 +147,7 @@ def doPlatform():
         tnow = time.time()-starttime
         # print(tnow-lastsendtime)
         #HACK to add z offset to platform
-        cmdlocal[2]+=4.0
+        #cmdlocal[2]+=2.0
 
         if tnow-lastsendtime>arduino_delay:     ### also happens super fast
             #print 'sent'
@@ -154,11 +155,12 @@ def doPlatform():
             lastsendtime = tnow
             ser.write('!'.encode())
        
-            for ind in range(0,len(cmdlocal)-6): #this is minus 7 to ignore the washout accels that are in this array
+            for ind in range(0,5): #this is minus 7 to ignore the washout accels that are in this array
                 ser.write(format(cmdlocal[ind],'0.4f').encode())
                 ser.write(','.encode())
-                ser.write(format(cmdlocal[-1],'0.4f').encode())
-                ser.write('\n'.encode())
+            ser.write(format(cmdlocal[-1],'0.4f').encode())
+            ser.write('\n'.encode())
+            print(cmdlocal[0] , ' + ', cmdlocal[1], ' + ', cmdlocal[2])
 
         else:
           time.sleep(.01)
@@ -236,7 +238,7 @@ def doSerial():
     #print("helo from serial")
     global file,xAccel,yAccel,zAccel,yGyro,zGyro,xGyro,timeArduino, arduino, xar, yar, yPlot, v,x, xDes, yDes, plotWashY, plotWashX, plotWashZ,w, washoutData
     y =1
-    arduino = serial.Serial('COM5',115200)
+    arduino = serial.Serial('COM10',115200)
     while not endSerialThread:
         data = arduino.readline()   
         #print(data)

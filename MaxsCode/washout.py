@@ -12,7 +12,7 @@ class Washout:
     self.axscale = 0.25
     self.azscale = 0.25
     #scale factors for simulating angular velocities
-    self.wzscale = 1.0
+    self.wzscale = 1
     self.dt = dt #this should be your guess for how fast the algorithm will run.
     #the speed of the loop will have a huge effect on how accurate this is,
     #so make sure you tune the thread that operates this filter to have this dt.
@@ -160,7 +160,7 @@ class Washout:
     self.azrawvec.pop(0);self.azrawvec.append(az_raw)
     self.wzrawvec.pop(0);self.wzrawvec.append(wz_raw)
 
-    print(accelYfilt)
+    print(accelXfilt, ' , ', accelYfilt)
 
     #now return the commands to the platform. each call to this function returns the scalar value that's relevant NOW
     return xfilt,yfilt,zfilt,roll,pitch,afilt,accelYfilt,accelXfilt, accelZfilt,axTotal,ayTotal,azTotal
